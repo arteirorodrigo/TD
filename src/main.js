@@ -8,7 +8,7 @@ const hex = (c) => '#' + c.toString(16).padStart(6, '0');
 const fmt = (n) => (n >= 10000 ? Math.round(n / 1000) + 'k' : Math.round(n).toLocaleString('pt-BR'));
 const ODDS_COLORS = ['#7c8798', '#4fb0ff', '#5fe3c0', '#c58bff', '#ffcc4d'];
 
-let game, view, selectedUid = null, speed = 1;
+let game, view, selectedUid = null, selectedEnemyUid = null, speed = 1;
 
 function start() {
   game = new Game();
@@ -19,7 +19,7 @@ function start() {
     if (type === 'over') showEnd(false);
     if (type === 'won') showEnd(true);
   });
-  selectedUid = null;
+  selectedUid = null; selectedEnemyUid = null;
   view.refreshCells();
   renderUI();
 }
@@ -94,8 +94,43 @@ function towerStats(def, e) {
   </dl>${def.abilities.length ? `<ul class="abil">${def.abilities.map((a) => `<li>${abilityText(a)}</li>`).join('')}</ul>` : ''}`;
 }
 
+function enemyEffects(en) {
+  const out = [];
+  if (en.slow.t > 0) out.push('Lento');
+  if (en.frost.t > 0) out.push('Congelado');
+  if (en.poison.t > 0) out.push('Envenenado');
+  if (en.stun > 0) out.push('Atordoado');
+  if (en.shred.t > 0) out.push('Armadura reduzida');
+  return out;
+}
+
+function renderEnemyCard(card, en) {
+  const t = en.type;
+  const f = Math.max(0, en.hp / en.maxHp);
+  const fx = enemyEffects(en);
+  card.innerHTML = `<h2>${t.name}</h2>
+    ${t.boss ? '<span class="tag boss">Chefe</span>' : ''}${t.air ? '<span class="tag air">Voador</span>' : '<span class="tag">Terrestre</span>'}
+    <div class="hpbar"><span style="width:${(f * 100).toFixed(1)}%;background:hsl(${Math.round(120 * f)},80%,50%)"></span></div>
+    <div class="hptext">Vida ${fmt(Math.max(0, Math.ceil(en.hp)))} / ${fmt(en.maxHp)}</div>
+    <dl class="stats">
+      <dt>Armadura</dt><dd>${Math.round(game.effArmor(en))}</dd>
+      <dt>Velocidade</dt><dd>${(Math.round(t.speed * SPEED_MULT / CELL * 10) / 10).toString().replace('.', ',')} q/s</dd>
+    </dl>
+    <div>${fx.length ? fx.map((x) => `<span class="tag">${x}</span>`).join('') : '<span class="muted">Sem efeitos</span>'}</div>`;
+}
+
 function renderSelection() {
   const card = $('sel-card');
+  if (selectedEnemyUid) {
+    const en = game.enemies.get(selectedEnemyUid);
+    if (!en) { selectedEnemyUid = null; view.showEnemySelection(null); card.hidden = true; return; }
+    card.hidden = false;
+    view.showSelection(null);
+    view.showEnemySelection(en.uid);
+    renderEnemyCard(card, en);
+    return;
+  }
+  view?.showEnemySelection(null);
   const e = selectedUid && game.entities.get(selectedUid);
   if (!e) { card.hidden = true; view?.showSelection(null); return; }
   card.hidden = false;
@@ -134,7 +169,8 @@ function renderSelection() {
   });
 }
 
-function select(uid) { selectedUid = uid; renderUI(); }
+function select(uid) { selectedUid = uid; selectedEnemyUid = null; renderUI(); }
+function selectEnemy(uid) { selectedUid = null; selectedEnemyUid = uid; renderSelection(); }
 
 function showRecipes() {
   const have = new Map();
@@ -288,6 +324,8 @@ function onTap(cx, cy) {
   if (!tl) return;
   const ent = game.entityAt(Math.floor(tl.fx), Math.floor(tl.fy));
   if (ent) { setAim(null); select(ent.uid === selectedUid ? null : ent.uid); return; }
+  const en = game.enemyNear(tl.fx, tl.fy);
+  if (en) { setAim(null); selectEnemy(en.uid === selectedEnemyUid ? null : en.uid); return; }
   if (game.phase === 'build') {
     if (aimSpot && aimSpot.x === tl.x && aimSpot.y === tl.y) { confirmPlace(); return; }
     if (game.canPlace(tl.x, tl.y)) { select(null); setAim({ x: tl.x, y: tl.y }); return; }
@@ -338,7 +376,8 @@ function loop(now) {
   updateFloaters(dt);
   updateConfirm();
   uiTimer += dt;
-  if (uiTimer > 0.5 && selectedUid && game.phase === 'wave') { uiTimer = 0; renderSelection(); }
+  if (selectedEnemyUid && uiTimer > 0.1) { uiTimer = 0; renderSelection(); }
+  else if (uiTimer > 0.5 && selectedUid && game.phase === 'wave') { uiTimer = 0; renderSelection(); }
   requestAnimationFrame(loop);
 }
 

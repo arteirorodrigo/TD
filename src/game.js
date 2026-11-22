@@ -218,6 +218,16 @@ export class Game {
     this.enemies.set(en.uid, en);
   }
 
+  // Closest enemy to a map point given in squares (as picked on screen), or null.
+  enemyNear(x, y, maxDist = 3) {
+    let best = null, bestD = maxDist;
+    for (const en of this.enemies.values()) {
+      const d = Math.hypot(en.x / CELL - x, en.y / CELL - y);
+      if (d <= bestD) { best = en; bestD = d; }
+    }
+    return best;
+  }
+
   // ---------- Simulation ----------
   update(dt) {
     if (this.phase === 'over' || this.phase === 'won') return;

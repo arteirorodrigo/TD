@@ -80,6 +80,9 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .legend { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .tag { display: inline-block; font: 600 10px var(--font-body); letter-spacing: .06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: #2a201a; color: #d8c6b4; margin: 2px 4px 0 0; }
 .tag.air { background: rgba(169, 155, 255, .18); color: var(--air); }
+.hpbar { height: 12px; border-radius: 6px; background: #0c0a08; border: 1px solid #3a2d22; overflow: hidden; margin: 10px 0 4px; }
+.hpbar span { display: block; height: 100%; transition: width .1s linear; }
+.hptext { font: 600 13px var(--font-body); font-variant-numeric: tabular-nums; margin-bottom: 8px; }
 .tier { font: 600 13px var(--font-body); color: #f1dcc4; margin: -2px 0 6px; font-variant-numeric: tabular-nums; }
 .tag.boss { background: rgba(255, 204, 77, .18); color: var(--gold); }
 .hint { color: var(--muted); font-size: 13px; }

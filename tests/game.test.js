@@ -65,3 +65,11 @@ test('tier labels', () => {
   assert.equal(tierLabel(0), 'T0 · Partida');
   assert.equal(tierLabel(5), 'T5 · Ancestral');
 });
+
+test('enemyNear picks closest within range', () => {
+  const g = new Game();
+  g.enemies.set(1, { uid: 1, x: 10 * CELL, y: 10 * CELL, alive: true });
+  g.enemies.set(2, { uid: 2, x: 12 * CELL, y: 10 * CELL, alive: true });
+  assert.equal(g.enemyNear(11.6, 10).uid, 2);
+  assert.equal(g.enemyNear(30, 30), null);
+});

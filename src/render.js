@@ -247,6 +247,8 @@ export class Renderer {
     for (const m of [this.rangeRing, this.rangeFill]) { m.rotation.x = -Math.PI / 2; m.position.y = 0.03; m.visible = false; scene.add(m); }
     this.selRing = new THREE.Mesh(new THREE.RingGeometry(1.25, 1.45, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false }));
     this.selRing.rotation.x = -Math.PI / 2; this.selRing.visible = false; scene.add(this.selRing);
+    this.enemyRing = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.25, 32), new THREE.MeshBasicMaterial({ color: 0xffd36a, transparent: true, opacity: 0.95, depthWrite: false, toneMapped: false }));
+    this.enemyRing.rotation.x = -Math.PI / 2; this.enemyRing.visible = false; this.selectedEnemy = null; scene.add(this.enemyRing);
 
     // Path preview line (air route)
     const air = game.grid.airPath().map((p) => new THREE.Vector3(p.x + 1, 3.2, p.y + 1));
@@ -543,8 +545,8 @@ export class Renderer {
     body.scale.multiplyScalar(scale);
     grp.add(body);
     // HP bar
-    const barBg = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.14), new THREE.MeshBasicMaterial({ color: 0x0a0d12, transparent: true, opacity: 0.8, depthWrite: false }));
-    const barFg = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.14), new THREE.MeshBasicMaterial({ color: 0x5dff8a, depthWrite: false }));
+    const barBg = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.3), new THREE.MeshBasicMaterial({ color: 0x0a0d12, transparent: true, opacity: 0.8, depthWrite: false }));
+    const barFg = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.3), new THREE.MeshBasicMaterial({ color: 0x5dff8a, depthWrite: false }));
     barFg.position.z = 0.001;
     const bar = new THREE.Group(); bar.add(barBg, barFg);
     bar.position.y = (t.air ? 3.4 : 1.5) * (t.boss ? 1.25 : 1);
@@ -584,7 +586,7 @@ export class Renderer {
       else if (en.poison.t > 0) em.setRGB(0.1, 0.45, 0.1);
       else em.copy(ud.mat.color).multiplyScalar(0.06);
       const f = Math.max(0, en.hp / en.maxHp);
-      ud.barFg.scale.x = Math.max(0.001, f); ud.barFg.position.x = -0.6 * (1 - f);
+      ud.barFg.scale.x = Math.max(0.001, f); ud.barFg.position.x = -0.85 * (1 - f);
       ud.barFg.material.color.setHSL(0.33 * f, 0.9, 0.55);
       ud.bar.quaternion.copy(this.camera.quaternion);
       ud.bar.rotation.setFromQuaternion(this.camera.quaternion);
@@ -710,6 +712,11 @@ export class Renderer {
     });
   }
 
+  showEnemySelection(uid) {
+    this.selectedEnemy = uid ?? null;
+    if (!uid) this.enemyRing.visible = false;
+  }
+
   showSelection(entity) {
     this.selected = entity;
     const on = !!entity;
@@ -761,6 +768,12 @@ export class Renderer {
     }
     if (this.ghost?.visible) this.ghost.position.y = 0.4 + Math.sin(this.time * 4) * 0.1;
     this.syncEnemies(dt);
+    const sel = this.selectedEnemy && this.game.enemies.get(this.selectedEnemy);
+    this.enemyRing.visible = !!sel;
+    if (sel) {
+      this.enemyRing.position.set(U(sel.x), sel.type.air ? 1.2 : 0.06, U(sel.y));
+      this.enemyRing.scale.setScalar((sel.type.boss ? 1.4 : 1) * (1 + Math.sin(this.time * 6) * 0.08));
+    }
     this.syncProjectiles();
     this.updateParticles(dt);
     this.updateEffects(dt);
