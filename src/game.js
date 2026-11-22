@@ -38,7 +38,7 @@ function armorMult(armor) {
 }
 
 export class Game {
-  constructor({ rng = Math.random, difficulty = 'medio' } = {}) {
+  constructor({ rng = Math.random, difficulty = 'medio', editor = false } = {}) {
     this.rng = rng;
     this.grid = new Grid();
     this.level = 1;
@@ -47,7 +47,7 @@ export class Game {
     this.lives = this.maxLives;
     this.gold = 0;
     this.qualityLevel = 0;
-    this.phase = 'build'; // build | choose | wave | over | won
+    this.phase = editor ? 'edit' : 'build'; // build | choose | wave | over | edit (maze editor)
     this.entities = new Map(); // uid -> {uid,x,y,kind:'gem'|'rock',def,pending,cooldown}
     this.enemies = new Map();
     this.projectiles = [];
@@ -99,6 +99,20 @@ export class Game {
     this.emit('change');
     return e;
   }
+
+  // ---------- Maze editor ----------
+  // Rocks placed freely (no limit, no scales); the path may never be closed.
+  placeRock(x, y) {
+    if (this.phase !== 'edit' || !Game.aligned(x, y) || !this.grid.tryBlock(x, y)) return false;
+    this.grid.block(x, y);
+    const e = { uid: this.nextUid++, x, y, kind: 'rock', def: null, pending: false, cooldown: 0 };
+    this.entities.set(e.uid, e);
+    this.path = this.grid.fullPath();
+    this.fx.push({ t: 'place', x, y, color: 0x8a8f98 });
+    this.emit('change');
+    return true;
+  }
+  mazeCells() { return [...this.entities.values()].map((e) => [e.x, e.y]); }
 
   upgradeQuality() {
     if (this.qualityLevel >= QUALITY_ODDS.length - 1) return false;

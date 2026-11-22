@@ -495,6 +495,7 @@ export class Renderer {
       if (m.userData.pendingRing) m.userData.pendingRing.visible = !!e.pending;
     }
     for (const [uid, m] of this.meshes) if (!seen.has(uid)) { this.disposeGroup(m); this.meshes.delete(uid); }
+    if (this.guideGroup) for (const g of this.guideGroup.children) g.visible = !this.game.entityAt(g.userData.cell[0], g.userData.cell[1]);
   }
 
   disposeGroup(g) {
@@ -777,6 +778,22 @@ export class Renderer {
       }
     }
     this.scene.add(this.comboGroup);
+  }
+
+  // Maze guide: translucent "shadow" stones where the saved maze has rocks; each hides once something stands there.
+  setGuide(cells) {
+    if (this.guideGroup) { this.scene.remove(this.guideGroup); this.guideGroup = null; }
+    if (!cells?.length) return;
+    this.guideMat ??= new THREE.MeshBasicMaterial({ color: 0x0a0806, transparent: true, opacity: 0.42, depthWrite: false });
+    this.guideRingMat ??= new THREE.MeshBasicMaterial({ color: 0xffe2a0, transparent: true, opacity: 0.55, depthWrite: false });
+    this.guideGroup = new THREE.Group();
+    for (const [x, y] of cells) {
+      const g = new THREE.Group(); g.position.set(x + 1, 0, y + 1); g.userData.cell = [x, y];
+      const m = new THREE.Mesh(this.rockGeos[(x * 7 + y) % this.rockGeos.length], this.guideMat); m.position.y = 0.3; m.scale.setScalar(1.3);
+      const ring = new THREE.Mesh(this.ringGeo, this.guideRingMat); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.04; ring.scale.setScalar(0.9);
+      g.add(m, ring); this.guideGroup.add(g);
+    }
+    this.scene.add(this.guideGroup);
   }
 
   showEnemySelection(uid) {

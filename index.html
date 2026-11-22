@@ -162,6 +162,15 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .recipe.branch { border-style: dashed; opacity: .9; }
 .recipe.secret { border-style: dashed; text-align: center; }
 .secret-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.menu-btns .wide { grid-column: 1 / -1; }
+.edit-only { display: none !important; }
+body.editing .edit-only { display: flex !important; }
+body.editing .play-only, body.editing .chip, body.editing .seg, body.editing #dock, body.editing #btn-menu { display: none !important; }
+.edit-bar { gap: 6px; }
+.maze-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid rgba(90, 58, 34, .25); }
+.maze-row:first-child { border-top: 0; }
+.maze-row .btns { display: flex; gap: 6px; }
+.maze-name { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #8a6a48; background: #fffaf0; color: #2e1b0e; font: 600 15px var(--font-body); margin: 8px 0 12px; }
 .end-actions { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
 .new-record { color: var(--gold); font: 700 15px var(--font-display); letter-spacing: .1em; }
 @media (max-height: 420px) { .screen .tagline, #scr-menu .kick { display: none; } .screen h1 { font-size: 26px; } .screen .rule { margin: 4px auto; } .screen .art { width: 74px; }
@@ -199,7 +208,13 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <button id="sp1" aria-pressed="true">1x</button><button id="sp2" aria-pressed="false">2x</button><button id="sp4" aria-pressed="false">4x</button>
   </div>
   <button class="btn" id="btn-fit" title="Ver o mapa todo (tecla 0)">Mapa todo</button>
-  <button class="btn" id="btn-recipes">Dragões</button>
+  <button class="btn play-only" id="btn-guide">Guia</button>
+  <button class="btn play-only" id="btn-recipes">Dragões</button>
+  <div class="edit-only edit-bar">
+    <button class="btn primary" id="ed-save">Salvar</button>
+    <button class="btn" id="ed-clear">Limpar</button>
+    <button class="btn" id="ed-exit">Sair</button>
+  </div>
 </header>
 
 <aside class="dock" id="dock">
@@ -234,6 +249,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     <button class="pbtn dark" id="m-play">Jogar</button>
     <button class="pbtn line" id="m-ranking">Ranking</button>
     <button class="pbtn line" id="m-book">Livro dos Dragões</button>
+    <button class="pbtn line wide" id="m-mazes">Labirintos</button>
   </div>
   <div class="record" id="m-record"></div>
 </section>

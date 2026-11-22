@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Game, DIFFICULTIES } from '../src/game.js';
 import { Grid } from '../src/map.js';
 import { waveFor, bountyFor } from '../src/data/enemies.js';
-import { getRecords, submitRecord, bestOverall } from '../src/records.js';
+import { getRecords, submitRecord, bestOverall, getMazes, saveMaze, deleteMaze } from '../src/records.js';
 import { bookLines, SECRET_IDS } from '../src/book.js';
 import { TOWERS, RECIPES, CELL, tierTag, tierLabel } from '../src/data/towers.js';
 
@@ -234,4 +234,36 @@ test('book groups every non-secret dragon into exactly one of 8 element lines', 
   assert.ok(fire.tiers[1].includes('volcano'));
   assert.deepEqual(fire.tiers[3], ['crownPrince']);
   assert.equal(SECRET_IDS.length, 5);
+});
+
+test('mazes are saved, updated and deleted', () => {
+  const s = fakeStorage();
+  assert.deepEqual(getMazes(s), []);
+  const a = saveMaze(s, { name: 'Espiral', cells: [[41, 21], [43, 21]] });
+  assert.ok(a.id);
+  assert.equal(getMazes(s).length, 1);
+  saveMaze(s, { id: a.id, name: 'Espiral 2', cells: [[41, 21]] });
+  assert.equal(getMazes(s).length, 1);
+  assert.equal(getMazes(s)[0].name, 'Espiral 2');
+  deleteMaze(s, a.id);
+  assert.deepEqual(getMazes(s), []);
+});
+
+test('editor places unlimited rocks, never closes the path, and exports them', () => {
+  const g = new Game({ editor: true });
+  assert.equal(g.phase, 'edit');
+  for (let x = 41; x <= 53; x += 2) assert.ok(g.placeRock(x, 21));
+  assert.equal(g.pending.length, 0);
+  assert.equal(g.mazeCells().length, 7);
+  let refused = 0;
+  for (let x = 1; x < g.grid.w; x += 2) if (!g.placeRock(x, 5)) refused++;
+  assert.ok(refused >= 1);
+  assert.ok(g.grid.fullPath());
+  const first = [...g.entities.values()][0];
+  assert.ok(g.removeRock(first.uid));
+});
+
+test('a normal match refuses editor rocks', () => {
+  const g = new Game();
+  assert.equal(g.placeRock(41, 21), false);
 });

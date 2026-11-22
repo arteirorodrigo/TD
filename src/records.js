@@ -42,3 +42,23 @@ export function markDiscovered(storage, id) {
   seen.add(id);
   try { storage?.setItem(SEEN_KEY, JSON.stringify([...seen])); } catch { /* not saved */ }
 }
+
+// Saved mazes (stone layouts drawn in the editor), used as a placement guide in matches.
+const MAZE_KEY = 'ninho.labirintos.v1';
+export function getMazes(storage) {
+  try { const v = JSON.parse(storage?.getItem(MAZE_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+function putMazes(storage, list) {
+  try { storage?.setItem(MAZE_KEY, JSON.stringify(list)); } catch { /* not saved */ }
+}
+export function saveMaze(storage, { id, name, cells }) {
+  const list = getMazes(storage);
+  const maze = { id: id || `m${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`, name: name || 'Labirinto', cells };
+  const i = list.findIndex((m) => m.id === maze.id);
+  if (i >= 0) list[i] = maze; else list.push(maze);
+  putMazes(storage, list);
+  return maze;
+}
+export function deleteMaze(storage, id) {
+  putMazes(storage, getMazes(storage).filter((m) => m.id !== id));
+}

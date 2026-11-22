@@ -17,6 +17,7 @@ export function initMenu(callbacks) {
   $('m-play').onclick = showLevels;
   $('m-ranking').onclick = () => cb.onRanking?.();
   $('m-book').onclick = () => cb.onBook?.();
+  $('m-mazes').onclick = () => cb.onMazes?.();
   $('lv-back').onclick = showMenu;
 }
 

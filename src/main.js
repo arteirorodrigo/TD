@@ -3,7 +3,7 @@ import { Renderer } from './render.js';
 import { TOWERS, QUALITIES, CELL, abilityText, tierTag, tierLabel } from './data/towers.js';
 import { waveFor, HP_MULT, SPEED_MULT, ABILITY_TEXT } from './data/enemies.js';
 import { initMenu, showMenu, hideScreens, screensOpen } from './menu.js';
-import { submitRecord, getDiscovered, markDiscovered } from './records.js';
+import { submitRecord, getDiscovered, markDiscovered, getMazes, saveMaze, deleteMaze } from './records.js';
 import { bookLines, SECRET_IDS } from './book.js';
 
 const $ = (id) => document.getElementById(id);
@@ -15,8 +15,13 @@ let game, view, selectedUid = null, selectedEnemyUid = null, speed = 1;
 
 const store = () => { try { return window.localStorage; } catch { return null; } };
 
-function start(difficulty = 'medio') {
-  game = new Game({ difficulty });
+let editingMaze = null, guideMaze = null;
+
+function start(difficulty = 'medio', { editor = false, maze = null } = {}) {
+  game = new Game({ difficulty, editor });
+  editingMaze = editor ? (maze || { name: '' }) : null;
+  document.body.classList.toggle('editing', editor);
+  if (editor && maze) for (const [x, y] of maze.cells) game.placeRock(x, y);
   $('modal').hidden = true;
   hideScreens();
   if (view) setSpeed(1);
@@ -30,13 +35,70 @@ function start(difficulty = 'medio') {
     if (type === 'hatch') markDiscovered(store(), id);
   });
   selectedUid = null; selectedEnemyUid = null;
+  view.setGuide(editor ? null : guideMaze?.cells ?? null);
   view.refreshCells();
   renderUI();
 }
 
+// ---------- Maze editor and guide ----------
+function sheet(cls, html) {
+  $('modal-body').className = 'sheet narrow ' + cls;
+  $('modal-body').innerHTML = html;
+  $('modal').hidden = false;
+}
+const closeModal = () => ($('modal').hidden = true);
+
+function showMazes() {
+  const list = getMazes(store());
+  sheet('parch', `<div class="center-msg"><h2>Labirintos</h2>
+    <p class="hint">Desenhe um labirinto com quantas pedras quiser. Na partida, toque em "Guia" para ver as sombras de onde colocar as pedras.</p></div>
+    <div>${list.map((m) => `<div class="maze-row"><span><b>${m.name.replace(/</g, '&lt;')}</b> <span class="muted">· ${m.cells.length} pedras</span></span>
+      <span class="btns"><button class="btn" data-edit="${m.id}">Editar</button><button class="btn" data-del="${m.id}">Apagar</button></span></div>`).join('') || '<p class="hint">Nenhum labirinto ainda.</p>'}</div>
+    <div class="end-actions"><button class="btn primary" id="mz-new">Novo labirinto</button><button class="btn" id="close-modal">Fechar</button></div>`);
+  $('close-modal').onclick = closeModal;
+  $('mz-new').onclick = () => start('medio', { editor: true });
+  $('modal-body').querySelectorAll('[data-edit]').forEach((b) => b.onclick = () => start('medio', { editor: true, maze: list.find((m) => m.id === b.dataset.edit) }));
+  $('modal-body').querySelectorAll('[data-del]').forEach((b) => b.onclick = () => { deleteMaze(store(), b.dataset.del); if (guideMaze?.id === b.dataset.del) guideMaze = null; showMazes(); });
+}
+
+function saveCurrentMaze() {
+  const cells = game.mazeCells();
+  sheet('', `<div class="center-msg"><h2>Salvar labirinto</h2><p class="hint">${cells.length} pedras</p></div>
+    <input class="maze-name" id="mz-name" maxlength="40" placeholder="Nome do labirinto" value="${(editingMaze.name || '').replace(/"/g, '&quot;')}">
+    <div class="end-actions"><button class="btn primary" id="mz-ok">Salvar</button><button class="btn" id="close-modal">Cancelar</button></div>`);
+  $('mz-name').focus();
+  $('close-modal').onclick = closeModal;
+  $('mz-ok').onclick = () => {
+    const saved = saveMaze(store(), { id: editingMaze.id, name: $('mz-name').value.trim() || 'Labirinto', cells });
+    editingMaze = saved;
+    closeModal();
+    floatText(32 * CELL, 32 * CELL, 'Labirinto salvo', 'crit');
+  };
+}
+
+function showGuidePicker() {
+  const list = getMazes(store());
+  sheet('', `<div class="center-msg"><h2>Guia de labirinto</h2><p class="hint">As sombras mostram onde colocar as pedras.</p></div>
+    <div class="maze-row"><span><b>Nenhum</b></span><button class="btn ${guideMaze ? '' : 'primary'}" data-guide="">Usar</button></div>
+    ${list.map((m) => `<div class="maze-row"><span><b>${m.name.replace(/</g, '&lt;')}</b> <span class="muted">· ${m.cells.length} pedras</span></span><button class="btn ${guideMaze?.id === m.id ? 'primary' : ''}" data-guide="${m.id}">Usar</button></div>`).join('')}
+    ${list.length ? '' : '<p class="hint">Crie labirintos no menu, em "Labirintos".</p>'}
+    <div class="end-actions"><button class="btn" id="close-modal">Fechar</button></div>`);
+  $('close-modal').onclick = closeModal;
+  $('modal-body').querySelectorAll('[data-guide]').forEach((b) => b.onclick = () => {
+    guideMaze = list.find((m) => m.id === b.dataset.guide) || null;
+    view.setGuide(guideMaze?.cells ?? null);
+    closeModal();
+  });
+}
+$('btn-guide').onclick = showGuidePicker;
+$('ed-save').onclick = saveCurrentMaze;
+$('ed-clear').onclick = () => { for (const e of [...game.entities.values()]) game.removeRock(e.uid); };
+$('ed-exit').onclick = () => { document.body.classList.remove('editing'); start(); showMenu(); };
+
 // ---------- UI ----------
 function phaseText() {
   const p = game.phase;
+  if (p === 'edit') return `Editor de labirinto · toque para pôr ou tirar pedras · ${game.entities.size} pedra${game.entities.size === 1 ? '' : 's'}`;
   if (p === 'build') return `Coloque ${STONES_PER_ROUND - game.pending.length} pedra${STONES_PER_ROUND - game.pending.length === 1 ? '' : 's'} no mapa`;
   if (p === 'choose') return 'Escolha uma escama para manter, combinar ou chocar um dragão';
   if (p === 'wave') return `Onda ${game.level} em andamento`;
@@ -412,6 +474,14 @@ function onTap(cx, cy) {
   const tl = tlFromPoint(cx, cy);
   if (!tl) return;
   const ent = game.entityAt(Math.floor(tl.fx), Math.floor(tl.fy));
+  if (game.phase === 'edit') {
+    if (ent) { game.removeRock(ent.uid); return; }
+    if (!game.placeRock(tl.x, tl.y)) {
+      const inMap = tl.x >= 0 && tl.y >= 0 && tl.x <= game.grid.w - 2 && tl.y <= game.grid.h - 2;
+      if (inMap) floatText((tl.x + 1) * CELL, (tl.y + 1) * CELL, game.grid.canBuildAt(tl.x, tl.y) ? 'Fecha o caminho' : 'Não dá para colocar aqui', 'leak');
+    }
+    return;
+  }
   if (ent) { setAim(null); select(ent.uid === selectedUid ? null : ent.uid); return; }
   const en = game.enemyNear(tl.fx, tl.fy);
   if (en) { setAim(null); selectEnemy(en.uid === selectedEnemyUid ? null : en.uid); return; }
@@ -477,7 +547,7 @@ function loop(now) {
 }
 
 start();
-initMenu({ onPlay: (diff) => start(diff), onBook: () => showRecipes({ inGame: false }), onRanking: showRanking });
+initMenu({ onPlay: (diff) => start(diff), onBook: () => showRecipes({ inGame: false }), onRanking: showRanking, onMazes: showMazes });
 showMenu();
 window.__game = () => game; // handy for debugging in the console
 window.__view = () => view;
