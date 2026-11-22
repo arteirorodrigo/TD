@@ -10,6 +10,8 @@ import { AttackFx } from './attack-fx.js';
 import { MAP_STYLE, makeParchmentCanvas, mapMargin } from './parchment-map.js';
 const MARGIN = mapMargin();
 import grassUrl from './assets/mapa_gramado.jpg';
+import mapaPergaminhoUrl from './assets/mapa-pergaminho.jpg'; // mapa padrão (mapa_certo.jpeg no molde, trilha pelos pontos E,1–6,S)
+const MAPA_IMAGEM = MAP_STYLE === 22 ? mapaPergaminhoUrl : null;
 import dragonModelUrl from './assets/dragoes/dragao-obj.glb?url';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { prepareDragonGeometry, stripWings, wingGeometry, buildHybridDragon } from './dragon-hybrid.js';
@@ -233,7 +235,7 @@ export class Renderer {
     this.cellTex.magFilter = this.cellTex.minFilter = THREE.NearestFilter;
     this.groundMat = new THREE.ShaderMaterial({
       vertexShader: GROUND_VERT, fragmentShader: GROUND_FRAG,
-      uniforms: { uCells: { value: this.cellTex }, uGrass: { value: MAP_STYLE ? (() => { const t = new THREE.CanvasTexture(makeParchmentCanvas()); t.anisotropy = 8; return t; })() : new THREE.TextureLoader().load(grassUrl) }, uParch: { value: MAP_STYLE ? 1 : 0 }, uMargin: { value: MARGIN }, uSize: { value: new THREE.Vector2(W, H) }, uTime: { value: 0 }, uGrid: { value: 1 },
+      uniforms: { uCells: { value: this.cellTex }, uGrass: { value: MAPA_IMAGEM ? (() => { const t = new THREE.TextureLoader().load(MAPA_IMAGEM); t.anisotropy = 8; return t; })() : MAP_STYLE ? (() => { const t = new THREE.CanvasTexture(makeParchmentCanvas()); t.anisotropy = 8; return t; })() : new THREE.TextureLoader().load(grassUrl) }, uParch: { value: MAP_STYLE ? 1 : 0 }, uMargin: { value: MARGIN }, uSize: { value: new THREE.Vector2(W, H) }, uTime: { value: 0 }, uGrid: { value: 1 },
         uHover: { value: new THREE.Vector4(0, 0, 0, 0) }, uHoverColor: { value: new THREE.Color(0x3cff9a) } },
       extensions: { derivatives: true },
     });

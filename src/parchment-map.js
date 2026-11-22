@@ -10,7 +10,7 @@ import { MAP } from './map.js';
 export const mapMargin = (style = MAP_STYLE) => (style >= 10 ? 12 : 0); // 10–15
 
 export const MAP_STYLE = (() => {
-  try { return +(new URLSearchParams(location.search).get('mapa') || 0); } catch { return 0; }
+  try { const v = new URLSearchParams(location.search).get('mapa'); return v === null ? 22 : +v; } catch { return 22; } // 22 = mapa pergaminho (padrão); ?mapa=0 = gramado antigo
 })();
 
 // Ruído simples e repetível (o mapa sai igual toda vez).
