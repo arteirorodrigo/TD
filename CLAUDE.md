@@ -29,9 +29,9 @@ O dono não é programador: fale em português simples, sem termos técnicos, e 
 - Modelos e imagens de fora: só grátis e com licença comercial. Arquivos grandes (`docs/referencias/*.glb`, `*.obj`) ficam fora do git.
 - Auditorias: comando `/auditoria` (agentes em `.claude/agents/`). O que o dono recusou está em `docs/auditorias/decisoes-do-dono.md` e não volta.
 
-## Pendências (22/11/2026, noite, branch `auditoria-1`, ainda não publicado)
+## Pendências (22/11/2026, noite — tudo abaixo do "Feito" já publicado)
 - Feito na noite de 22/11: tarefas 2–7 da auditoria (plano `docs/superpowers/plans/2026-11-22-auditoria-1.md`), pequenos erros (veneno/aura no dano, recorde na fase 1, plural, inimigos parados ao sair, clique em voadores, destaque da rodada, vida 15/14) e o nome novo.
-1. Ataque por elemento (**só nos dragões**; escamas ficam com o tiro de hoje): 3 ideias em `docs/ataque-ideias/` (1 projéteis, 2 feixes, 3 sopro), testáveis com `?ataque=1|2|3` na URL (`src/attack-fx.js`). Aguardando o dono escolher.
-2. Decisão pendente: chocar dragão só com torres antigas faz as 5 pedras novas virarem rocha.
-3. Revisão final do branch antes de publicar; dragão sentado na construção / voando na onda.
+1. Ataque por elemento: feito (projéteis com rastro, só dragões; `src/attack-fx.js`).
+2. Chocar dragão só com torres antigas: o dono acha perfeito assim (não mexer).
+3. Revisão feita e publicada. Falta: dragão sentado na construção / voando na onda.
 4. Ranking online com Firebase (Parte 2) — deixado para depois pelo dono.
