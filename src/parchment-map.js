@@ -7,7 +7,7 @@ import { MAP } from './map.js';
 
 // Versões 10–12: o pergaminho é maior que a área de jogo (MARGEM quadrados de cada lado); moldura, título,
 // bússola grande e serpente ficam nessa borda de fora, e o quadriculado só na parte de dentro.
-export const mapMargin = (style = MAP_STYLE) => (style >= 10 ? 12 : 0);
+export const mapMargin = (style = MAP_STYLE) => (style >= 10 ? 12 : 0); // 10–15
 
 export const MAP_STYLE = (() => {
   try { return +(new URLSearchParams(location.search).get('mapa') || 0); } catch { return 0; }
@@ -117,7 +117,7 @@ export function makeParchmentCanvas(style = MAP_STYLE, size = 2048) {
   return c;
 }
 
-function compass(x, cx, cy, r, ink) {
+function compass(x, cx, cy, r, ink, eye = false) {
   x.save(); x.translate(cx, cy);
   x.strokeStyle = ink; x.fillStyle = ink; x.lineWidth = 3; x.globalAlpha = 0.8;
   x.beginPath(); x.arc(0, 0, r, 0, Math.PI * 2); x.stroke();
@@ -131,7 +131,54 @@ function compass(x, cx, cy, r, ink) {
   }
   x.font = `700 ${Math.round(r * 0.32)}px Georgia, serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
   x.fillText('N', 0, -r * 1.25); x.fillText('S', 0, r * 1.25); x.fillText('L', r * 1.25, 0); x.fillText('O', -r * 1.25, 0);
+  if (eye) {
+    // Olho de dragão no centro: amêndoa dourada com pupila em fenda.
+    x.globalAlpha = 1; const e = r * 0.34;
+    x.beginPath(); x.moveTo(-e, 0); x.quadraticCurveTo(0, -e * 0.95, e, 0); x.quadraticCurveTo(0, e * 0.95, -e, 0); x.closePath();
+    x.fillStyle = '#e0a020'; x.fill(); x.lineWidth = 3; x.stroke();
+    x.beginPath(); x.ellipse(0, 0, e * 0.13, e * 0.42, 0, 0, Math.PI * 2); x.fillStyle = ink; x.fill();
+  }
   x.restore();
+}
+
+// Dragão voando (silhueta em tinta, virado para a direita; flip vira para a esquerda).
+function flyingDragon(x, px, py, s, ink, flip = false, alpha = 0.9) {
+  x.save(); x.translate(px, py); if (flip) x.scale(-1, 1); x.fillStyle = ink; x.strokeStyle = ink; x.globalAlpha = alpha; x.lineJoin = 'round';
+  const wing = (ox, k, a) => {
+    x.save(); x.translate(ox, 0); x.scale(k, k); x.globalAlpha = alpha * a;
+    x.beginPath(); x.moveTo(0.05 * s, -0.06 * s); x.lineTo(0.2 * s, -0.55 * s); x.lineTo(-0.1 * s, -1.0 * s);
+    x.quadraticCurveTo(-0.22 * s, -0.62 * s, -0.36 * s, -0.66 * s); x.quadraticCurveTo(-0.42 * s, -0.4 * s, -0.56 * s, -0.42 * s);
+    x.quadraticCurveTo(-0.5 * s, -0.2 * s, -0.62 * s, -0.12 * s); x.lineTo(-0.25 * s, -0.02 * s); x.closePath(); x.fill();
+    x.restore();
+  };
+  wing(0.18 * s, 0.8, 0.55); // asa de trás
+  x.beginPath(); x.ellipse(0, 0, 0.36 * s, 0.11 * s, -0.08, 0, Math.PI * 2); x.fill(); // corpo
+  x.beginPath(); x.moveTo(0.26 * s, -0.06 * s); x.quadraticCurveTo(0.5 * s, -0.12 * s, 0.6 * s, -0.3 * s); x.lineTo(0.86 * s, -0.25 * s);
+  x.lineTo(0.66 * s, -0.17 * s); x.quadraticCurveTo(0.52 * s, 0.02 * s, 0.3 * s, 0.06 * s); x.closePath(); x.fill(); // pescoço e cabeça
+  x.beginPath(); x.moveTo(0.62 * s, -0.29 * s); x.lineTo(0.56 * s, -0.42 * s); x.lineTo(0.68 * s, -0.3 * s); x.fill(); // chifre
+  x.lineWidth = 0.07 * s; x.lineCap = 'round';
+  x.beginPath(); x.moveTo(-0.3 * s, 0.02 * s); x.quadraticCurveTo(-0.75 * s, 0.25 * s, -1.05 * s, 0.02 * s); x.stroke(); // cauda
+  x.beginPath(); x.moveTo(-1.05 * s, 0.02 * s); x.lineTo(-1.2 * s, -0.1 * s); x.lineTo(-1.14 * s, 0.1 * s); x.closePath(); x.fill(); // ponta da cauda
+  wing(0, 1, 1); // asa da frente
+  x.restore();
+}
+
+// Chama desenhada (início e fim da trilha, ao lado do título).
+function flame(x, px, py, s, ink) {
+  x.save(); x.translate(px, py); x.lineWidth = Math.max(2, s * 0.08); x.strokeStyle = ink;
+  const drop = (k, col) => { x.beginPath(); x.moveTo(0, -s * k); x.bezierCurveTo(s * 0.55 * k, -s * 0.45 * k, s * 0.5 * k, s * 0.35 * k, 0, s * 0.4 * k); x.bezierCurveTo(-s * 0.5 * k, s * 0.35 * k, -s * 0.55 * k, -s * 0.2 * k, -s * 0.12 * k, -s * 0.55 * k); x.closePath(); x.fillStyle = col; x.fill(); };
+  drop(1, '#d0302a'); x.stroke(); drop(0.6, '#f08a20'); drop(0.3, '#ffd060');
+  x.restore();
+}
+
+// Caverna do covil: morro com boca escura e fogo lá dentro.
+function cave(x, px, py, s, ink, paper) {
+  x.save(); x.strokeStyle = ink; x.lineWidth = 4; x.fillStyle = `rgb(${paper.map((v) => v - 16).join(',')})`;
+  x.beginPath(); x.moveTo(px - s * 1.4, py); x.quadraticCurveTo(px - s * 0.9, py - s * 1.3, px - s * 0.2, py - s * 1.5); x.quadraticCurveTo(px + s * 0.7, py - s * 1.6, px + s * 1.4, py); x.closePath(); x.fill(); x.stroke();
+  for (let k = 0; k < 6; k++) { x.beginPath(); x.moveTo(px + s * (0.2 + k * 0.18), py - s * (1.3 - k * 0.2)); x.lineTo(px + s * (0.35 + k * 0.18), py - s * (1.05 - k * 0.2)); x.stroke(); }
+  x.beginPath(); x.moveTo(px - s * 0.55, py); x.quadraticCurveTo(px - s * 0.5, py - s * 0.95, px, py - s * 0.95); x.quadraticCurveTo(px + s * 0.5, py - s * 0.95, px + s * 0.55, py); x.closePath(); x.fillStyle = 'rgb(40,22,10)'; x.fill();
+  x.restore();
+  flame(x, px, py - s * 0.35, s * 0.42, ink);
 }
 
 // ---------- Mapa de ilha ilustrado (4 completo, 5 limpo, 6 envelhecido) ----------
@@ -148,6 +195,11 @@ const ISLAND = {
   10: { paper: [238, 214, 166], sea: [244, 224, 184], ink: [86, 52, 24], route: '#d0302a', doodles: true, labels: true, aged: 0.35, rich: 0.6, ref3: true },
   11: { paper: [226, 190, 130], sea: [232, 200, 146], ink: [70, 40, 16], route: '#d0302a', doodles: true, labels: true, aged: 0.8, rich: 0.8, ref3: true },
   12: { paper: [204, 160, 98], sea: [212, 170, 108], ink: [50, 26, 10], route: '#b02020', doodles: true, labels: true, aged: 1.5, rich: 0.8, stains: true, ref3: true },
+  // 13–15: referência do ilustrador do dono (terras dos dragões): dragões voando, caverna-covil com fogo,
+  // chamas no início e no fim da trilha, olho de dragão na bússola. 13 clara, 14 média, 15 envelhecida.
+  13: { paper: [238, 214, 166], sea: [244, 224, 184], ink: [86, 52, 24], route: '#d0302a', doodles: true, labels: true, aged: 0.35, rich: 0.6, ref3: true, dragons: true },
+  14: { paper: [226, 190, 130], sea: [232, 200, 146], ink: [70, 40, 16], route: '#d0302a', doodles: true, labels: true, aged: 0.8, rich: 0.8, ref3: true, dragons: true },
+  15: { paper: [204, 160, 98], sea: [212, 170, 108], ink: [50, 26, 10], route: '#b02020', doodles: true, labels: true, aged: 1.5, rich: 0.8, stains: true, ref3: true, dragons: true },
   9: { paper: [196, 150, 88], sea: [206, 162, 100], ink: [44, 22, 8], route: '#a01822', doodles: true, labels: true, aged: 1.6, rich: 1, stains: true },
 };
 
@@ -220,7 +272,7 @@ function makeIslandCanvas(style, size) {
   x.save(); x.strokeStyle = inkCss; x.lineWidth = 2; x.globalAlpha = 0.35; x.setLineDash([14, 12]);
   for (let k = 0; k < 8; k++) { const a = (k * Math.PI) / 4 + Math.PI / 8; x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx + Math.cos(a) * S, cy + Math.sin(a) * S); x.stroke(); }
   x.restore();
-  compass(x, cx, cy, cr, inkCss);
+  compass(x, cx, cy, cr, inkCss, !!st.dragons);
   if (st.rich) {
     if (st.ref3) compass(x, S * 0.07 + S * 0.035, S * 0.5, S * 0.032, inkCss); else compass(x, S * 0.16, S * 0.3, S * 0.055, inkCss);
     // Moldura numerada (como as coordenadas de um mapa antigo).
@@ -250,6 +302,13 @@ function makeIslandCanvas(style, size) {
     x.restore();
     serpent(x, S * 0.5, S * 0.915, S * 0.028, inkCss, st.paper);
     titleBanner(x, S * 0.36, S * 0.088, 'O COVIL DOS DRAGÕES', 'Ilha das Escamas', inkCss, st.paper);
+    if (st.dragons) {
+      flame(x, S * 0.36 - 330, S * 0.088 + 10, 40, inkCss); flame(x, S * 0.36 + 330, S * 0.088 + 10, 40, inkCss);
+      flyingDragon(x, S * 0.74, S * 0.1, S * 0.06, inkCss, true);
+      flyingDragon(x, S * 0.935, S * 0.32, S * 0.045, inkCss, true);
+      flyingDragon(x, S * 0.075, S * 0.8, S * 0.05, inkCss, false);
+      flyingDragon(x, S * 0.24, S * 0.925, S * 0.04, inkCss, false, 0.8);
+    }
   }
   // Daqui em diante tudo é desenhado em relação à área de jogo (0..S), encaixado no papel maior.
   x.save(); x.translate((m * S) / T, (m * S) / T); x.scale(1 / T, 1 / T);
@@ -319,20 +378,34 @@ function makeIslandCanvas(style, size) {
   x.lineTo(...trail[trail.length - 1]); x.stroke(); x.restore();
   // Bandeirinha na entrada e X + ninho de ovos (o tesouro do covil) na saída.
   const [ex, ey] = pts[pts.length - 1], [sx, sy] = pts[0];
+  if (st.dragons) {
+    // Fogo na entrada; na saída, a caverna do covil com fogo e o ninho de ovos ao lado.
+    flame(x, sx - 80, sy + 90, 46, inkCss);
+    cave(x, ex + 160, ey - 30, 90, inkCss, st.paper);
+    nest(x, ex + 330, ey - 70, inkCss);
+    // Dragõezinhos voando sobre o mar da área de jogo.
+    for (let k = 0, tries = 0; k < 4 && tries < 400; tries++) {
+      const u = 0.06 + r() * 0.88, v = 0.06 + r() * 0.88;
+      if (land(u, v) > -0.04) continue;
+      k++; flyingDragon(x, u * S, v * S, 70 + r() * 35, inkCss, r() < 0.5, 0.8);
+    }
+  } else {
   x.strokeStyle = st.route; x.lineWidth = 12; x.lineCap = 'round';
   x.beginPath(); x.moveTo(ex - 30, ey - 100); x.lineTo(ex + 30, ey - 160); x.moveTo(ex - 30, ey - 160); x.lineTo(ex + 30, ey - 100); x.stroke();
   if (st.rich) castle(x, ex + 150, ey - 60, inkCss, st.paper); else nest(x, ex + 110, ey - 120, inkCss);
   x.strokeStyle = inkCss; x.lineWidth = 4;
   x.beginPath(); x.moveTo(sx - 70, sy + 130); x.lineTo(sx - 70, sy + 40); x.stroke();
   x.fillStyle = st.route; x.beginPath(); x.moveTo(sx - 70, sy + 40); x.lineTo(sx - 20, sy + 58); x.lineTo(sx - 70, sy + 76); x.fill();
+  }
 
   if (st.labels) {
     x.fillStyle = inkCss; x.textAlign = 'center';
     const label = (t, u, v, px = 44) => { x.font = `italic 600 ${px}px Georgia, serif`; x.save(); x.strokeStyle = `rgba(${st.paper.join(',')},.85)`; x.lineWidth = 9; x.lineJoin = 'round'; x.strokeText(t, u * S, v * S); x.restore(); x.fillText(t, u * S, v * S); };
     label('Covil dos Dragões', st.rich ? 0.17 : 0.27, st.rich ? 0.8 : 0.9, 50);
-    label('Mar das Brumas', 0.14, 0.56, 40);
+    label(st.dragons ? 'Mar de Enxofre' : 'Mar das Brumas', 0.14, 0.56, 40);
+    if (st.dragons) { label('Costa das Brasas', 0.8, 0.86, 38); label('Ninho do Dragão', 0.5, 0.93, 36); }
     if (!st.ref3) label('Ilha dos Orcs', 0.13, 0.1, 40);
-    label('Picos de Fogo', 0.7, 0.255, 38);
+    label(st.dragons ? 'Montes do Wyrm' : 'Picos de Fogo', 0.7, 0.255, 38);
     label('Floresta Élfica', 0.42, 0.395, 38);
     if (!st.ref3) banner(x, S * 0.62, S * 0.95, 'O COVIL', inkCss, st.paper);
   }
