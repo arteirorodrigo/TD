@@ -40,7 +40,7 @@ function start(difficulty = 'medio', { editor = false, maze = null } = {}) {
   });
   selectedUid = null; selectedEnemyUid = null;
   view.setGuide(editor ? null : guideMaze?.cells ?? null);
-  $('tip').hidden = true; tutorial = null;
+  $('tip').hidden = true; $('help-btn').hidden = true; tutorial = null;
   endParty();
   view.refreshCells();
   renderUI();
@@ -90,13 +90,22 @@ function maybeTutorial() {
   showTip(1);
   view.previewPath(3);
 }
+// A dica não abre sozinha: aparece o ícone "Ajuda" piscando; a janela só abre quando o jogador toca nele (pedido do dono 22/11).
 function showTip(n) {
   tutorial = n;
   $('tip-text').innerHTML = TIPS[n];
-  $('tip').hidden = false;
+  $('tip').hidden = true;
+  $('help-btn').hidden = false;
+  $('help-btn').classList.add('blink');
 }
+$('help-btn').onclick = () => {
+  if (!$('tip-text').innerHTML) return;
+  $('help-btn').classList.remove('blink');
+  $('tip').hidden = !$('tip').hidden;
+};
 $('tip').onclick = () => {
   $('tip').hidden = true;
+  $('help-btn').hidden = true;
   if (tutorial === 1) showTip(2);
   else if (tutorial === 2) { tutorial = 'wait-choose'; if (game.phase === 'choose') showTip(3); }
   else if (tutorial === 3) { tutorial = null; markTutorialSeen(store()); }
