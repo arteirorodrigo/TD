@@ -4,7 +4,7 @@
 // stage 4 adds a golden crown and gilded spines. Head faces +z, up is +y.
 import * as THREE from 'three';
 
-function taperTube(curve, r, segs = 40, radial = 14) {
+export function taperTube(curve, r, segs = 40, radial = 14) {
   const frames = curve.computeFrenetFrames(segs, false);
   const pos = [], idx = [];
   for (let i = 0; i <= segs; i++) {
@@ -24,8 +24,8 @@ function taperTube(curve, r, segs = 40, radial = 14) {
   g.setIndex(idx); g.computeVertexNormals();
   return g;
 }
-const V = (x, y, z) => new THREE.Vector3(x, y, z);
-const curve = (...pts) => new THREE.CatmullRomCurve3(pts.map((p) => V(...p)));
+export const V = (x, y, z) => new THREE.Vector3(x, y, z);
+export const curve = (...pts) => new THREE.CatmullRomCurve3(pts.map((p) => V(...p)));
 
 function mats(color, stage) {
   const c = new THREE.Color(color);
@@ -44,7 +44,7 @@ function mats(color, stage) {
 }
 
 // Points along a curve, with a direction pointing away from the belly (for spines) or toward it (for plates).
-function along(cv, n, from = 0, to = 1) {
+export function along(cv, n, from = 0, to = 1) {
   const out = [];
   for (let i = 0; i < n; i++) {
     const t = from + (to - from) * (n === 1 ? 0.5 : i / (n - 1));
@@ -52,7 +52,7 @@ function along(cv, n, from = 0, to = 1) {
   }
   return out;
 }
-function backDir(tan, preferUp = false) {
+export function backDir(tan, preferUp = false) {
   const side = V(1, 0, 0);
   let d = new THREE.Vector3().crossVectors(side, tan).normalize();
   if (preferUp ? d.y < 0 : d.z > 0) d.negate();
