@@ -108,6 +108,15 @@ export function waveFor(level) {
   return units;
 }
 
+// First special wave (invisible or immune to physical damage) from the next wave up to `ahead` waves later.
+export function upcomingSpecial(level, ahead = 3) {
+  for (let lv = level; lv <= level + ahead; lv++) {
+    const types = ENEMY_TYPES.filter((e) => e.level === baseLevelOf(lv));
+    for (const kind of ['invis', 'physImmune']) if (types.some((t) => t.abilities.includes(kind))) return { level: lv, kind };
+  }
+  return null;
+}
+
 // Gold per kill (tunable).
 export function bountyFor(type) {
   const base = type.boss ? 30 + type.level * 3 : 2 + Math.floor(type.level / 3);

@@ -1,7 +1,7 @@
 import { Game, DIFFICULTIES, STONES_PER_ROUND, QUALITY_ODDS, qualityUpgradeCost, toWorld } from './game.js';
 import { Renderer } from './render.js';
 import { TOWERS, QUALITIES, CELL, abilityText, tierTag, tierLabel } from './data/towers.js';
-import { waveFor, HP_MULT, SPEED_MULT, ABILITY_TEXT } from './data/enemies.js';
+import { waveFor, upcomingSpecial, HP_MULT, SPEED_MULT, ABILITY_TEXT } from './data/enemies.js';
 import { initMenu, showMenu, hideScreens, screensOpen } from './menu.js';
 import { submitRecord, getDiscovered, markDiscovered, getMazes, saveMaze, deleteMaze } from './records.js';
 import { bookLines, SECRET_IDS } from './book.js';
@@ -142,6 +142,7 @@ function renderUI() {
 
   renderCombos();
   renderWave();
+  renderAlert();
   renderSelection();
 }
 
@@ -168,11 +169,32 @@ function renderCombos() {
   });
 }
 
+const SPECIAL_TEXT = {
+  invis: ['inimigos <b>INVISÍVEIS</b>', 'Só a Escama Etérea (e alguns dragões) revela invisíveis.'],
+  physImmune: ['inimigos <b>IMUNES A DANO FÍSICO</b>', 'Use Veneno ou dragões de fogo e raio.'],
+};
+function specialWarning() {
+  if (game.phase !== 'build' && game.phase !== 'choose') return null;
+  const sp = upcomingSpecial(game.level);
+  if (!sp) return null;
+  const n = sp.level - game.level;
+  const when = n === 0 ? 'Na próxima onda' : `Em ${n + 1} ondas (fase ${sp.level})`;
+  const [what, tip] = SPECIAL_TEXT[sp.kind];
+  return `${when}: ${what}. ${tip}`;
+}
+function renderAlert() {
+  const msg = specialWarning();
+  $('hud-alert').hidden = !msg;
+  if (msg) $('hud-alert-text').innerHTML = msg;
+}
+
 function renderWave() {
   const units = waveFor(game.level);
   const types = [...new Map(units.map((u) => [u.id, u])).values()];
   const label = game.phase === 'wave' ? 'Onda atual' : 'Próxima onda';
-  $('wave-card').innerHTML = `<h3>${label} · ${units.length} inimigo${units.length > 1 ? 's' : ''}</h3>` + types.map((t) => `
+  const warn = specialWarning();
+  $('wave-card').innerHTML = `<h3>${label} · ${units.length} inimigo${units.length > 1 ? 's' : ''}</h3>`
+    + (warn ? `<p class="hint" style="color:#ffb3a0;margin:4px 0">⚠ ${warn}</p>` : '') + types.map((t) => `
     <div style="margin-top:6px"><b>${t.name}</b>
       <div class="muted" style="font-variant-numeric:tabular-nums">Vida ${fmt(t.hp * HP_MULT)} · Vel. ${Math.round(t.speed * SPEED_MULT / CELL * 10) / 10} q/s · Armadura ${t.armor}</div>
       ${t.boss ? '<span class="tag boss">Chefe</span>' : ''}${t.air ? '<span class="tag air">Voador</span>' : '<span class="tag">Terrestre</span>'}${t.abilities.map((a) => `<span class="tag">${ABILITY_TEXT[a]}</span>`).join('')}

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game, DIFFICULTIES, QUALITY_ODDS } from '../src/game.js';
 import { Grid } from '../src/map.js';
-import { waveFor, bountyFor, baseLevelOf, ENEMY_TYPES } from '../src/data/enemies.js';
+import { waveFor, bountyFor, baseLevelOf, ENEMY_TYPES, upcomingSpecial } from '../src/data/enemies.js';
 import { getRecords, submitRecord, bestOverall, getMazes, saveMaze, deleteMaze } from '../src/records.js';
 import { bookLines, SECRET_IDS } from '../src/book.js';
 import { TOWERS, RECIPES, CELL, tierTag, tierLabel } from '../src/data/towers.js';
@@ -344,4 +344,12 @@ test('reroll price resets next round', () => {
   g.keep(g.pending[1]);
   g.phase = 'choose';
   assert.equal(g.rerollCost(), 50);
+});
+
+test('upcomingSpecial warns about invisible and physical-immune waves', () => {
+  assert.deepEqual(upcomingSpecial(7), { level: 8, kind: 'invis' });
+  assert.deepEqual(upcomingSpecial(8), { level: 8, kind: 'invis' }); // the next wave itself
+  assert.equal(upcomingSpecial(1), null);
+  assert.deepEqual(upcomingSpecial(21), { level: 23, kind: 'physImmune' });
+  assert.deepEqual(upcomingSpecial(57), { level: 58, kind: 'physImmune' }); // endless: 58 = base 33
 });
