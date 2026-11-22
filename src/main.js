@@ -3,7 +3,7 @@ import { Renderer } from './render.js';
 import { TOWERS, QUALITIES, CELL, abilityText, tierTag, tierLabel } from './data/towers.js';
 import { waveFor, upcomingSpecial, HP_MULT, SPEED_MULT, ABILITY_TEXT } from './data/enemies.js';
 import { initMenu, showMenu, hideScreens, screensOpen } from './menu.js';
-import { submitRecord, getDiscovered, markDiscovered, getMazes, saveMaze, deleteMaze } from './records.js';
+import { submitRecord, getDiscovered, markDiscovered, getMazes, saveMaze, deleteMaze, tutorialSeen, markTutorialSeen } from './records.js';
 import { bookLines, SECRET_IDS } from './book.js';
 
 const $ = (id) => document.getElementById(id);
@@ -33,12 +33,39 @@ function start(difficulty = 'medio', { editor = false, maze = null } = {}) {
   });
   game.on((type, id) => {
     if (type === 'hatch') markDiscovered(store(), id);
+    if (type === 'change' && tutorial === 'wait-choose' && game.phase === 'choose') showTip(3);
   });
   selectedUid = null; selectedEnemyUid = null;
   view.setGuide(editor ? null : guideMaze?.cells ?? null);
+  $('tip').hidden = true; tutorial = null;
   view.refreshCells();
   renderUI();
 }
+
+// ---------- First match tips ----------
+// 1: the path (with a ghost line walking it) → 2: stones make the path longer → (when 5 are placed) 3: keep one scale.
+const TIPS = {
+  1: 'Os inimigos entram pelo <b>E</b>, passam pelos números <b>1 a 6</b> e tentam sair pelo <b>S</b>. Cada um que escapa tira uma vida.',
+  2: 'Coloque <b>5 pedras</b> no mapa: toque num lugar e confirme. As pedras <b>alongam o caminho</b> (ele nunca pode ser fechado) e viram escamas que atacam.',
+  3: 'Agora <b>fique com 1 escama</b>: toque numa das novas e escolha Manter, Combinar ou Chocar um dragão. As outras viram pedras.',
+};
+let tutorial = null; // null | 1 | 2 | 'wait-choose' | 3
+function maybeTutorial() {
+  if (tutorialSeen(store())) return;
+  showTip(1);
+  view.previewPath(3);
+}
+function showTip(n) {
+  tutorial = n;
+  $('tip-text').innerHTML = TIPS[n];
+  $('tip').hidden = false;
+}
+$('tip').onclick = () => {
+  $('tip').hidden = true;
+  if (tutorial === 1) showTip(2);
+  else if (tutorial === 2) tutorial = 'wait-choose';
+  else if (tutorial === 3) { tutorial = null; markTutorialSeen(store()); }
+};
 
 // ---------- Maze editor and guide ----------
 function sheet(cls, html) {
@@ -580,7 +607,7 @@ function loop(now) {
 }
 
 start();
-initMenu({ onPlay: (diff) => start(diff), onBook: () => showRecipes({ inGame: false }), onRanking: showRanking, onMazes: showMazes });
+initMenu({ onPlay: (diff) => { start(diff); maybeTutorial(); }, onBook: () => showRecipes({ inGame: false }), onRanking: showRanking, onMazes: showMazes });
 showMenu();
 window.__game = () => game; // handy for debugging in the console
 window.__view = () => view;

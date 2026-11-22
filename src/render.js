@@ -856,6 +856,34 @@ export class Renderer {
     this.scene.add(this.guideGroup);
   }
 
+  // First match: a short line of glowing "ghost" walkers runs the path from E to S once.
+  previewPath(seconds = 3) {
+    const path = this.game.path;
+    if (!path?.length) return;
+    if (!this.pathGhosts) {
+      this.ghostGeo = new THREE.SphereGeometry(0.55, 12, 8);
+      this.sharedGeos.add(this.ghostGeo);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: 0.85, depthWrite: false });
+      this.pathGhosts = Array.from({ length: 8 }, () => { const m = new THREE.Mesh(this.ghostGeo, mat); m.visible = false; this.scene.add(m); return m; });
+    }
+    this.pathPreview = { t: 0, dur: seconds, path };
+  }
+
+  updatePathPreview(dt) {
+    const pp = this.pathPreview;
+    if (!pp) return;
+    pp.t += dt;
+    const n = pp.path.length - 1, done = pp.t >= pp.dur;
+    this.pathGhosts.forEach((m, i) => {
+      const k = pp.t / pp.dur - i * 0.04; // a short queue, one behind the other
+      m.visible = !done && k >= 0 && k <= 1;
+      if (!m.visible) return;
+      const f = k * n, a = pp.path[Math.floor(f)], b = pp.path[Math.min(n, Math.floor(f) + 1)], u = f % 1;
+      m.position.set(a.x + (b.x - a.x) * u + 1, 0.7 + 0.15 * Math.sin(this.time * 10 + i), a.y + (b.y - a.y) * u + 1);
+    });
+    if (done) this.pathPreview = null;
+  }
+
   showEnemySelection(uid) {
     this.selectedEnemy = uid ?? null;
     if (!uid) this.enemyRing.visible = false;
@@ -892,6 +920,7 @@ export class Renderer {
       sp.mesh.material.opacity = Math.sin(k * Math.PI); // fades in at the stone, out at the dragon
     }
     this.updateCamera();
+    this.updatePathPreview(dt);
     this.syncEntities();
     for (const [uid, m] of this.meshes) {
       const ud = m.userData;

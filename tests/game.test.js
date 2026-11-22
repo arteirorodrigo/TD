@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Game, DIFFICULTIES, QUALITY_ODDS } from '../src/game.js';
 import { Grid } from '../src/map.js';
 import { waveFor, bountyFor, baseLevelOf, ENEMY_TYPES, upcomingSpecial } from '../src/data/enemies.js';
-import { getRecords, submitRecord, bestOverall, getMazes, saveMaze, deleteMaze } from '../src/records.js';
+import { getRecords, submitRecord, bestOverall, getMazes, saveMaze, deleteMaze, tutorialSeen, markTutorialSeen } from '../src/records.js';
 import { bookLines, SECRET_IDS } from '../src/book.js';
 import { TOWERS, RECIPES, CELL, tierTag, tierLabel } from '../src/data/towers.js';
 
@@ -352,4 +352,15 @@ test('upcomingSpecial warns about invisible and physical-immune waves', () => {
   assert.equal(upcomingSpecial(1), null);
   assert.deepEqual(upcomingSpecial(21), { level: 23, kind: 'physImmune' });
   assert.deepEqual(upcomingSpecial(57), { level: 58, kind: 'physImmune' }); // endless: 58 = base 33
+});
+
+test('first-match tips are shown once and survive a broken storage', () => {
+  const s = fakeStorage();
+  assert.equal(tutorialSeen(s), false);
+  markTutorialSeen(s);
+  assert.equal(tutorialSeen(s), true);
+  const broken = { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); } };
+  assert.equal(tutorialSeen(broken), false);
+  assert.doesNotThrow(() => markTutorialSeen(broken));
+  assert.equal(tutorialSeen(null), false);
 });

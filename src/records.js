@@ -62,3 +62,12 @@ export function saveMaze(storage, { id, name, cells }) {
 export function deleteMaze(storage, id) {
   putMazes(storage, getMazes(storage).filter((m) => m.id !== id));
 }
+
+// First-match tips: shown once per device.
+const TUTORIAL_KEY = 'ninho.tutorial.v1';
+export function tutorialSeen(storage) {
+  try { return storage?.getItem(TUTORIAL_KEY) === '1'; } catch { return false; }
+}
+export function markTutorialSeen(storage) {
+  try { storage?.setItem(TUTORIAL_KEY, '1'); } catch { /* not saved: tips may show again */ }
+}
