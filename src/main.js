@@ -199,7 +199,8 @@ function renderUI() {
   const maxed = game.qualityLevel >= QUALITY_ODDS.length - 1;
   const cost = qualityUpgradeCost(game.qualityLevel);
   const lb = $('btn-luck');
-  lb.textContent = maxed ? 'Máximo' : `Melhorar (${cost} ouro)`;
+  lb.innerHTML = maxed ? 'Máx.' : `+ <svg class="i"><use href="#i-coin"/></svg>${cost}`;
+  lb.title = maxed ? 'Sorte no máximo' : `Melhorar a sorte das escamas (${cost} ouro)`;
   lb.disabled = maxed || game.gold < cost;
 
   renderCombos();
@@ -605,6 +606,8 @@ function updateConfirm() {
 function setSpeed(s) {
   speed = s;
   for (const v of [1, 2, 4]) $('sp' + v).setAttribute('aria-pressed', String(v === s));
+  $('fan-speed-v').textContent = s + 'x';
+  $('fan-speed').classList.toggle('on', s > 1);
 }
 for (const v of [1, 2, 4]) $('sp' + v).onclick = () => setSpeed(v);
 $('btn-luck').onclick = () => game.upgradeQuality();
@@ -625,7 +628,16 @@ window.addEventListener('keydown', (ev) => {
 });
 window.addEventListener('resize', () => view.resize());
 // Folding cards (only folded on a phone lying down, see CSS): tap the title to open or close.
-for (const id of ['luck-card', 'wave-card']) $(id).addEventListener('click', (ev) => { if (ev.target.closest('h3')) $(id).classList.toggle('open'); });
+$('wave-card').addEventListener('click', (ev) => { if (ev.target.closest('h3')) $('wave-card').classList.toggle('open'); });
+// Sorte das escamas: a aba abre e fecha tocando no nome.
+$('luck-toggle').onclick = () => { const open = $('luck-card').classList.toggle('open'); $('luck-toggle').setAttribute('aria-expanded', String(open)); };
+// Leque em "L" no canto: abre/fecha no botão redondo; tocar fora fecha.
+function setFan(open) { document.body.classList.toggle('fan-open', open); $('fab').setAttribute('aria-expanded', String(open)); }
+$('fab').onclick = () => setFan(!document.body.classList.contains('fan-open'));
+$('fan-scrim').onclick = () => setFan(false);
+for (const id of ['btn-menu', 'btn-fit', 'btn-guide', 'btn-recipes']) $(id).addEventListener('click', () => setFan(false));
+$('fan-speed').onclick = () => setSpeed(speed === 1 ? 2 : speed === 2 ? 4 : 1);
+$('fan-wave').onclick = () => { const on = $('wave-card').classList.toggle('show'); $('wave-card').classList.add('open'); $('fan-wave').classList.toggle('on', on); setFan(false); };
 
 // ---------- Loop ----------
 let last = performance.now(), uiTimer = 0;

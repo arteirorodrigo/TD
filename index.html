@@ -335,32 +335,73 @@ body.editing .play-only, body.editing .plaque, body.editing .chip, body.editing 
   .card.fold:not(.open) > :not(h3) { display: none; }
 }
 
-/* ---------- Computador: barra de cima vai para a coluna da direita (pedido do dono 22/11) ---------- */
-@media (min-aspect-ratio: 9/10) and (min-height: 481px) {
-  .hud { left: auto; right: calc(max(16px, env(safe-area-inset-right, 0px)) + 2px); width: 296px; padding-left: 0; padding-right: 0; }
-  .hud-bar { flex-wrap: wrap; gap: 8px; }
-  .hud-bar > .spacer { display: none; }
-  #btn-menu { order: 1; align-self: stretch; }
-  #btn-menu .lbl { display: none; }
-  .hud-tools { order: 2; flex: 1; justify-content: space-between; }
-  .hud-tools .lbl { display: inline; }
-  .hud-tools .btn { flex-direction: column; gap: 3px; font-size: 10px; letter-spacing: .04em; padding: 5px 6px; }
-  .hud-tools .btn svg.i { width: 17px; height: 17px; }
-  .hud-tools .sep { margin: 6px 2px; }
-  .seg { align-items: center; }
-  .seg button { padding: 7px 8px; }
-  .plaque { order: 3; width: 100%; justify-content: space-between; }
-  .chip { padding: 7px 10px; }
-  .chip .k { display: none; }
-  .phase { order: 4; display: block; width: 100%; margin: 0; padding: 8px 14px; font-size: 15px; white-space: normal; text-align: center; }
-  .alert { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 16px; right: 332px; margin: 0; }
-  .dock { top: calc(var(--hud-h, 160px) + 6px); max-height: calc(100% - var(--hud-h, 160px) - 16px); }
+/* ---------- Quadro único na direita + leque em "L" (22/11) ---------- */
+.hud-tools.edit-only { display: none; }
+body.editing .hud-tools.edit-only { display: flex; }
+.main-card { padding: 12px 14px 12px; }
+.main-card .plaque { background: none; box-shadow: none; justify-content: space-between; margin: -4px -6px 10px; }
+.main-card .chip { padding: 4px 6px; }
+.main-card .chip .k { display: none; }
+.main-card .chip + .chip::before { top: 6px; bottom: 6px; }
+.mc-part { border-top: 1px solid rgba(111, 74, 40, .3); padding-top: 10px; margin-top: 10px; }
+.main-card .plaque + .mc-part { margin-top: 0; }
+#main-card .phase { position: static; display: block; margin: 0 0 9px; padding: 0; background: none; box-shadow: none; white-space: normal; text-align: left; font-size: 16px; line-height: 1.25; overflow: visible; }
+.luck-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.luck-toggle { background: none; border: 0; padding: 4px 0; display: flex; align-items: center; gap: 6px; font: 700 11px/1.2 var(--font-display); letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); cursor: pointer; }
+.luck-toggle::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translate(-2px, -2px); transition: transform .15s; }
+.luck.open .luck-toggle::before { transform: rotate(-135deg) translate(-1px, -1px); }
+.luck-up { padding: 5px 10px; font-size: 12px; gap: 5px; background: linear-gradient(var(--btn-dark), var(--btn-dark-2)); color: var(--gold-bright); box-shadow: inset 0 1px 0 rgba(240, 195, 90, .35), 0 0 0 1px #1f1109; }
+.luck-up svg.i { width: 14px; height: 14px; color: var(--gold-bright); }
+.luck-body { display: none; padding-top: 4px; }
+.luck.open .luck-body { display: block; }
+#wave-card:not(.show) { display: none !important; }
+.dock { top: calc(env(safe-area-inset-top, 0px) + 16px); max-height: calc(100% - 120px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+body.editing #dock { display: flex !important; }
+body.editing #dock > :not(#main-card), body.editing .main-card .plaque, body.editing #slots, body.editing #luck-card, body.editing #slots-card h3 { display: none !important; }
+body.editing #slots-card { border: 0; margin: 0; padding: 0; }
+body.editing .dock { top: calc(env(safe-area-inset-top, 0px) + 70px); }
+body.editing .fan, body.editing .fan-scrim { display: none; }
+
+.fan { position: fixed; z-index: 7; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); width: 64px; height: 64px; }
+.fab { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--gold-bright); color: var(--gold-bright);
+  background: radial-gradient(circle at 50% 35%, #4a2c18, var(--btn-dark-2)); box-shadow: 0 8px 18px -4px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(240, 195, 90, .3); cursor: pointer; transition: transform .15s; }
+.fab svg.i { width: 26px; height: 26px; }
+.fab:active { transform: scale(.95); }
+.fab .f-open, body.fan-open .fab .f-closed { display: none; } body.fan-open .fab .f-open { display: block; }
+.fan-col, .fan-row { position: absolute; display: flex; gap: 10px; pointer-events: none; }
+.fan-col { right: 4px; bottom: 74px; flex-direction: column-reverse; }
+.fan-row { bottom: 4px; right: 74px; flex-direction: row-reverse; }
+.fan-item { width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--edge); background: var(--paper); color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  box-shadow: 0 6px 14px -4px rgba(0, 0, 0, .7); cursor: pointer; opacity: 0; transform: scale(.4); transition: opacity .15s, transform .18s; }
+.fan-item svg.i { width: 20px; height: 20px; }
+.fan-item b { font: 700 16px/1 var(--font-display); color: var(--ink); }
+.fan-item span { font: 700 8.5px/1 var(--font-body); letter-spacing: .02em; color: var(--ink-soft); white-space: nowrap; }
+.fan-item.on { background: linear-gradient(var(--btn-dark), var(--btn-dark-2)); color: var(--gold-bright); } .fan-item.on span { color: var(--gold-bright); }
+body.fan-open .fan-col, body.fan-open .fan-row { pointer-events: auto; }
+body.fan-open .fan-item { opacity: 1; transform: none; }
+.fan-scrim { position: fixed; inset: 0; z-index: 6; background: rgba(0, 0, 0, .28); display: none; }
+body.fan-open .fan-scrim { display: block; }
+
+@media (max-aspect-ratio: 9/10) {
+  .dock { top: calc(63.5% - 10px); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); right: calc(max(12px, env(safe-area-inset-right, 0px)) + 72px); }
+  .fan { bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); right: max(10px, env(safe-area-inset-right, 0px)); }
+}
+@media (min-aspect-ratio: 1/1) and (max-height: 480px) {
+  .dock { top: calc(env(safe-area-inset-top, 0px) + 8px); bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); }
+  .main-card { padding: 8px 10px; }
+  #main-card .phase { font-size: 13px; margin-bottom: 6px; }
+  .mc-part { padding-top: 6px; margin-top: 6px; }
+  .fan { width: 54px; height: 54px; bottom: 10px; right: 10px; } .fab { width: 54px; height: 54px; }
+  .fan-col { bottom: 62px; } .fan-row { right: 62px; }
+  .fan-item { width: 48px; height: 48px; }
 }
 </style>
   <script type="module" src="./src/main.js"></script>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-fan" viewBox="0 0 24 24"><circle cx="7" cy="7" r="2.6" fill="currentColor"/><circle cx="17" cy="7" r="2.6" fill="currentColor"/><circle cx="7" cy="17" r="2.6" fill="currentColor"/><circle cx="17" cy="17" r="2.6" fill="currentColor"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></symbol>
   <symbol id="i-menu" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M5 21V4m0 0h11l-2 4 2 4H5"/></symbol>
   <symbol id="i-heart" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21s-7.5-4.6-9.6-9.3C.9 8.2 3 4.5 6.6 4.5c2.1 0 3.5 1.1 4.4 2.5.9-1.4 2.3-2.5 4.4-2.5 3.6 0 5.7 3.7 4.2 7.2C19.5 16.4 12 21 12 21z"/></symbol>
@@ -382,23 +423,8 @@ body.editing .play-only, body.editing .plaque, body.editing .chip, body.editing 
 
 <header class="hud">
   <div class="hud-bar">
-    <button class="btn" id="btn-menu" aria-label="Menu"><svg class="i"><use href="#i-menu"/></svg><span class="lbl">Menu</span></button>
-    <div class="plaque">
-      <div class="chip level" title="Fase"><svg class="i"><use href="#i-flag"/></svg><span class="k">Fase</span><span class="v" id="hud-level">1</span></div>
-      <div class="chip diff" title="Dificuldade"><span class="v" id="hud-diff">Médio</span></div>
-      <div class="chip lives" title="Vidas"><svg class="i"><use href="#i-heart"/></svg><span class="k">Vidas</span><span class="v" id="hud-lives">10</span></div>
-      <div class="chip gold" title="Ouro"><svg class="i"><use href="#i-coin"/></svg><span class="k">Ouro</span><span class="v" id="hud-gold">0</span></div>
-    </div>
-    <div class="phase" id="hud-phase">Coloque 5 pedras no mapa</div>
     <div class="spacer"></div>
-    <div class="hud-tools">
-      <div class="seg" role="group" aria-label="Velocidade">
-        <button id="sp1" aria-pressed="true">1x</button><button id="sp2" aria-pressed="false">2x</button><button id="sp4" aria-pressed="false">4x</button>
-      </div>
-      <span class="sep play-only" aria-hidden="true"></span>
-      <button class="btn" id="btn-fit" title="Ver o mapa todo (tecla 0)"><svg class="i"><use href="#i-fit"/></svg><span class="lbl">Mapa todo</span></button>
-      <button class="btn play-only" id="btn-guide" title="Guia"><svg class="i"><use href="#i-book"/></svg><span class="lbl">Guia</span></button>
-      <button class="btn play-only" id="btn-recipes" title="Dragões"><svg class="i"><use href="#i-egg"/></svg><span class="lbl">Dragões</span></button>
+    <div class="hud-tools edit-only">
       <div class="edit-only edit-bar">
         <button class="btn primary" id="ed-save">Salvar</button>
         <button class="btn" id="ed-clear">Limpar</button>
@@ -408,26 +434,52 @@ body.editing .play-only, body.editing .plaque, body.editing .chip, body.editing 
   </div>
   <div class="alert" id="hud-alert" hidden><span id="hud-alert-text"></span></div>
 </header>
+<!-- Leque em "L" no canto de baixo à direita (escolha do dono 22/11) -->
+<div class="fan-scrim" id="fan-scrim"></div>
+<div class="fan" id="fan">
+  <div class="fan-col">
+    <button class="fan-item" id="btn-menu" title="Menu"><svg class="i"><use href="#i-menu"/></svg><span>Menu</span></button>
+    <button class="fan-item" id="fan-speed" title="Velocidade (teclas 1, 2, 4)"><b id="fan-speed-v">1x</b><span>Velocidade</span></button>
+    <button class="fan-item" id="btn-fit" title="Ver o mapa todo (tecla 0)"><svg class="i"><use href="#i-fit"/></svg><span>Mapa todo</span></button>
+  </div>
+  <div class="fan-row">
+    <button class="fan-item" id="btn-recipes" title="Dragões"><svg class="i"><use href="#i-egg"/></svg><span>Dragões</span></button>
+    <button class="fan-item" id="fan-wave" title="Próxima onda"><svg class="i"><use href="#i-flag"/></svg><span>Onda</span></button>
+    <button class="fan-item" id="btn-guide" title="Guia"><svg class="i"><use href="#i-book"/></svg><span>Guia</span></button>
+  </div>
+  <button class="fab" id="fab" aria-label="Abrir o menu" aria-expanded="false"><svg class="i f-closed"><use href="#i-fan"/></svg><svg class="i f-open"><use href="#i-close"/></svg></button>
+  <div class="seg" hidden><button id="sp1" aria-pressed="true">1x</button><button id="sp2" aria-pressed="false">2x</button><button id="sp4" aria-pressed="false">4x</button></div>
+</div>
 <aside class="dock" id="dock">
-  <section class="card" id="sel-card" hidden></section>
-  <section class="card" id="slots-card">
-    <h3>Pedras desta rodada</h3>
-    <div class="slots" id="slots"></div>
+  <section class="card main-card" id="main-card">
+    <div class="plaque">
+      <div class="chip level" title="Fase"><svg class="i"><use href="#i-flag"/></svg><span class="v" id="hud-level">1</span></div>
+      <div class="chip diff" title="Dificuldade"><span class="v" id="hud-diff">Médio</span></div>
+      <div class="chip lives" title="Vidas"><svg class="i"><use href="#i-heart"/></svg><span class="v" id="hud-lives">10</span></div>
+      <div class="chip gold" title="Ouro"><svg class="i"><use href="#i-coin"/></svg><span class="v" id="hud-gold">0</span></div>
+    </div>
+    <div class="mc-part" id="slots-card">
+      <h3>Pedras desta rodada</h3>
+      <div class="phase" id="hud-phase">Coloque 5 pedras no mapa</div>
+      <div class="slots" id="slots"></div>
+    </div>
+    <div class="mc-part luck" id="luck-card">
+      <div class="luck-head">
+        <button class="luck-toggle" id="luck-toggle" aria-expanded="false">Sorte · <span id="luck-level">Nível 0</span></button>
+        <button class="btn luck-up" id="btn-luck" title="Melhorar a sorte das escamas">Melhorar</button>
+      </div>
+      <div class="luck-body">
+        <div class="odds" id="odds"></div>
+        <div class="legend" id="odds-legend"></div>
+      </div>
+    </div>
   </section>
+  <section class="card" id="sel-card" hidden></section>
   <section class="card combo-card" id="combo-card" hidden>
     <h3>Combinações desta rodada</h3>
     <div id="combos"></div>
   </section>
-  <section class="card fold" id="luck-card">
-    <h3>Sorte das escamas</h3>
-    <div class="odds" id="odds"></div>
-    <div class="legend" id="odds-legend"></div>
-    <div class="row" style="margin-top:8px; align-items:center; justify-content:space-between">
-      <span class="muted" id="luck-level">Nível 0</span>
-      <button class="btn" id="btn-luck">Melhorar</button>
-    </div>
-  </section>
-  <section class="card wave-card fold" id="wave-card"></section>
+  <section class="card wave-card" id="wave-card"></section>
 </aside>
 
 <section class="screen" id="scr-menu" hidden>
