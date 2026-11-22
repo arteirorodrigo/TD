@@ -1,6 +1,6 @@
 # TD — nova versão
 
-Protótipo da nova versão do tower defense, com as mesmas mecânicas do jogo original e gráficos 3D (Three.js). O tema visual ainda vai ser definido; por enquanto os nomes das gemas são de trabalho.
+Protótipo da nova versão do tower defense, com as mesmas mecânicas do jogo original e gráficos 3D (Three.js). Tema: dragões. Resumo completo do que já foi feito em [RESUMO.md](RESUMO.md).
 
 ## Rodar
 
@@ -21,6 +21,6 @@ node scripts/build-artifact.mjs   # página única em dist-artifact/td.html
 
 ## Dados
 
-- `src/data/towers.js`: 8 tipos x 6 qualidades e 44 especiais.
+- `src/data/towers.js`: 8 tipos x 6 qualidades e 43 dragões.
 - `src/data/enemies.js`: 50 níveis de inimigos, quantidade por onda e ouro por abate (ajustáveis).
 - Referências transcritas em `docs/`.
