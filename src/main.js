@@ -136,7 +136,7 @@ function renderSelection() {
   const card = $('sel-card');
   if (selectedEnemyUid) {
     const en = game.enemies.get(selectedEnemyUid);
-    if (!en) { selectedEnemyUid = null; view.showEnemySelection(null); card.hidden = true; return; }
+    if (!en?.alive || !game.visible(en)) { selectedEnemyUid = null; view.showEnemySelection(null); card.hidden = true; return; }
     card.hidden = false;
     view.showSelection(null);
     view.showEnemySelection(en.uid);

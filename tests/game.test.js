@@ -68,8 +68,8 @@ test('tier labels', () => {
 
 test('enemyNear picks closest within range', () => {
   const g = new Game();
-  g.enemies.set(1, { uid: 1, x: 10 * CELL, y: 10 * CELL, alive: true });
-  g.enemies.set(2, { uid: 2, x: 12 * CELL, y: 10 * CELL, alive: true });
+  g.enemies.set(1, { uid: 1, x: 10 * CELL, y: 10 * CELL, alive: true, ab: new Set() });
+  g.enemies.set(2, { uid: 2, x: 12 * CELL, y: 10 * CELL, alive: true, ab: new Set() });
   assert.equal(g.enemyNear(11.6, 10).uid, 2);
   assert.equal(g.enemyNear(30, 30), null);
 });
@@ -95,4 +95,16 @@ test('evolutionInfo does not reuse one gem for a repeated ingredient', () => {
   g.entities.set(901, { uid: 901, x: 5, y: 5, kind: 'gem', def: TOWERS.P5, pending: false });
   const evo = g.evolutionInfo(900).find((e) => e.result === 'burningStone');
   assert.deepEqual(evo.items.map((i) => i.have), [true, true, false, false]);
+});
+
+test('enemyNear skips dead enemies', () => {
+  const g = new Game();
+  g.enemies.set(1, { uid: 1, x: 10 * CELL, y: 10 * CELL, alive: false, ab: new Set() });
+  assert.equal(g.enemyNear(10, 10), null);
+});
+
+test('enemyNear skips enemies the player cannot see', () => {
+  const g = new Game();
+  g.enemies.set(1, { uid: 1, x: 10 * CELL, y: 10 * CELL, alive: true, ab: new Set(['invis']) });
+  assert.equal(g.enemyNear(10, 10), null);
 });

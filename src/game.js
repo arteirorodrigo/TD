@@ -243,6 +243,7 @@ export class Game {
   enemyNear(x, y, maxDist = 3) {
     let best = null, bestD = maxDist;
     for (const en of this.enemies.values()) {
+      if (!en.alive || !this.visible(en)) continue;
       const d = Math.hypot(en.x / CELL - x, en.y / CELL - y);
       if (d <= bestD) { best = en; bestD = d; }
     }
