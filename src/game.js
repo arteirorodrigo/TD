@@ -484,8 +484,9 @@ export class Game {
 
   leak(en) {
     en.alive = false;
-    this.lives -= en.type.boss ? 3 : 1;
-    this.fx.push({ t: 'leak', x: en.x, y: en.y });
+    const lost = en.type.boss ? 3 : 1;
+    this.lives -= lost;
+    this.fx.push({ t: 'leak', x: en.x, y: en.y, lost });
     if (this.lives <= 0) { this.lives = 0; this.phase = 'over'; this.emit('over'); }
     this.emit('change');
   }

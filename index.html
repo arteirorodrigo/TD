@@ -157,7 +157,6 @@ svg.i { width: 16px; height: 16px; flex: none; display: block; }
 .evo-item { margin-bottom: 8px; }
 .evo-item ul { list-style: none; padding: 0; margin: 4px 0 0; font-size: 13px; }
 .evo-item li.ok { color: var(--leaf); font-weight: 700; }
-.evo-item li.ok::before { content: "✓ "; }
 .evo-item li.no { color: var(--ink-faint); }
 .tier { font: 700 13px var(--font-body); color: var(--ink-soft); margin: -2px 0 6px; font-variant-numeric: tabular-nums; }
 .wave-card h3 + p { margin-top: 0; }
@@ -393,6 +392,12 @@ body.fan-open .fan-scrim { display: block; }
   .mc-part { padding-top: 6px; margin-top: 6px; }
   .fan { width: 54px; height: 54px; bottom: 10px; right: 10px; } .fab { width: 54px; height: 54px; }
   .fan-col { bottom: 62px; } .fan-row { right: 62px; }
+  /* Escolher a escama: só o essencial em cima e o "Manter" sempre à vista (2ª auditoria, design 2) */
+  .slot { height: 44px; }
+  body.phase-choose #luck-card, body.phase-choose #slots-card h3, body.phase-choose #hud-phase { display: none; }
+  body.phase-choose #main-card .plaque { margin-bottom: 4px; }
+  body.phase-choose #sel-card .actions { position: sticky; bottom: -10px; margin: 8px -10px -8px; padding: 8px 10px; background: var(--paper, #f1e0bc); box-shadow: 0 -6px 10px -6px rgba(0,0,0,.35); z-index: 1; }
+  body.phase-choose #sel-card .actions .btn { width: 100%; justify-content: center; }
   .fan-item { width: 48px; height: 48px; }
 }
 .help-btn { position: fixed; z-index: 29; left: max(16px, env(safe-area-inset-left, 0px)); top: calc(env(safe-area-inset-top, 0px) + 16px); width: 60px; height: 60px; border-radius: 50%;

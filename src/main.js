@@ -184,6 +184,7 @@ function renderUI() {
   const ph = $('hud-phase');
   ph.textContent = phaseText();
   ph.classList.toggle('wave', game.phase === 'wave');
+  document.body.classList.toggle('phase-choose', game.phase === 'choose');
 
   // Round slots
   const slots = $('slots');
@@ -409,6 +410,7 @@ function showRecipes({ inGame = true } = {}) {
   $('modal-body').className = 'sheet book' + (inGame ? '' : ' parch');
   $('modal-body').innerHTML = `<div class="row" style="justify-content:space-between;align-items:center"><h2>${inGame ? 'Dragões' : 'Livro dos Dragões'}</h2><button class="btn" id="close-modal">Fechar</button></div>
     <p class="hint">8 linhas de evolução, uma por elemento: cada estágio nasce do anterior mais algumas escamas. "Ramo" é um dragão que sai da linha mas não leva ao final.${inGame ? ' Ingredientes em destaque já estão no mapa.' : ''}</p>
+    <p class="hint">Dica: a receita alternativa (depois do "ou") pede uma escama de cada qualidade, inclusive a Partida (T0). Com a sorte alta, a Partida deixa de sair: guarde uma desde o começo.</p>
     ${lines}
     <section class="line"><h3>Dragões secretos</h3><div class="secret-grid">${secrets}</div></section>`;
   $('modal').hidden = false;
