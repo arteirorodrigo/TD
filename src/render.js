@@ -6,6 +6,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { CELL, tierTag } from './data/towers.js';
+import grassUrl from './assets/mapa_gramado.jpg';
 import { PLATFORM, BLOCK } from './map.js';
 
 const U = (v) => v / CELL; // game units -> squares
@@ -139,7 +140,7 @@ const GROUND_VERT = /* glsl */`
 varying vec2 vUv; varying vec3 vWorld;
 void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
 const GROUND_FRAG = /* glsl */`
-uniform sampler2D uCells; uniform vec2 uSize; uniform float uTime; uniform vec4 uHover; uniform vec3 uHoverColor;
+uniform sampler2D uCells; uniform sampler2D uGrass; uniform vec2 uSize; uniform float uTime; uniform vec4 uHover; uniform vec3 uHoverColor;
 varying vec2 vUv; varying vec3 vWorld;
 float gridLine(vec2 p, float w){ vec2 g = abs(fract(p - .5) - .5) / fwidth(p); return 1. - min(min(g.x, g.y) / w, 1.); }
 void main(){
@@ -149,12 +150,14 @@ void main(){
   float path = c.r, plat = c.g, block = c.b;
   float inside = step(0., p.x) * step(0., p.y) * step(p.x, uSize.x) * step(p.y, uSize.y);
   vec3 base = mix(vec3(.15,.125,.11), vec3(.21,.18,.155), smoothstep(45., 0., length(p - uSize*.5)));
+  vec3 grass = texture2D(uGrass, vec2(p.x / uSize.x, 1. - p.y / uSize.y)).rgb;
+  base = mix(base, grass * .62, inside);
   float fine = gridLine(p, 1.0) * .025;
   float major = gridLine((p - 1.) / 2., 1.2) * .2; // build cells: 2x2, starting on odd squares
   vec3 col = base + vec3(.55,.42,.30) * (fine + major);
   // path glow with a slow flowing pulse
   float flow = .55 + .45 * sin((p.x + p.y) * .35 - uTime * 2.2);
-  col = mix(col, vec3(.55,.26,.10) * (.85 + .3 * flow), path * .7);
+  col = mix(col, vec3(.50,.38,.22) * (.9 + .15 * flow), path * .85);
   col = mix(col, vec3(.42,.31,.14), plat * .85);
   col += vec3(1.,.75,.3) * plat * gridLine(p, 1.2) * .2;
   // hover footprint
@@ -210,7 +213,7 @@ export class Renderer {
     this.cellTex.magFilter = this.cellTex.minFilter = THREE.NearestFilter;
     this.groundMat = new THREE.ShaderMaterial({
       vertexShader: GROUND_VERT, fragmentShader: GROUND_FRAG,
-      uniforms: { uCells: { value: this.cellTex }, uSize: { value: new THREE.Vector2(W, H) }, uTime: { value: 0 },
+      uniforms: { uCells: { value: this.cellTex }, uGrass: { value: new THREE.TextureLoader().load(grassUrl) }, uSize: { value: new THREE.Vector2(W, H) }, uTime: { value: 0 },
         uHover: { value: new THREE.Vector4(0, 0, 0, 0) }, uHoverColor: { value: new THREE.Color(0x3cff9a) } },
       extensions: { derivatives: true },
     });
