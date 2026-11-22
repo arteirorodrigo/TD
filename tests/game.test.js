@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game.js';
 import { Grid } from '../src/map.js';
-import { TOWERS, RECIPES } from '../src/data/towers.js';
+import { TOWERS, RECIPES, CELL, tierTag, tierLabel } from '../src/data/towers.js';
 
 test('initial path exists through all waypoints', () => {
   const g = new Grid();
@@ -58,4 +58,10 @@ test('stones snap to the 2x2 build grid', () => {
   assert.equal(g.canPlace(40, 21), false);
   assert.equal(g.canPlace(41, 20), false);
   assert.equal(g.canPlace(41, 21), true);
+});
+
+test('tier labels', () => {
+  assert.equal(tierTag(0), 'T0');
+  assert.equal(tierLabel(0), 'T0 · Partida');
+  assert.equal(tierLabel(5), 'T5 · Ancestral');
 });

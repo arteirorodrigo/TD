@@ -1,6 +1,6 @@
 import { Game, STONES_PER_ROUND, QUALITY_ODDS, qualityUpgradeCost, toWorld } from './game.js';
 import { Renderer } from './render.js';
-import { TOWERS, QUALITIES, CELL, abilityText } from './data/towers.js';
+import { TOWERS, QUALITIES, CELL, abilityText, tierTag, tierLabel } from './data/towers.js';
 import { waveFor, HP_MULT, SPEED_MULT, ABILITY_TEXT, MAX_LEVEL } from './data/enemies.js';
 
 const $ = (id) => document.getElementById(id);
@@ -50,7 +50,7 @@ function renderUI() {
     const b = document.createElement('button');
     b.className = 'slot' + (e ? ' filled' : '') + (e && e.uid === selectedUid ? ' sel' : '');
     if (e) {
-      b.innerHTML = `<span><span class="swatch" style="color:${hex(e.def.color)};background:${hex(e.def.color)}"></span>${QUALITIES[e.def.quality].slice(0, 3)}</span>`;
+      b.innerHTML = `<span><span class="swatch" style="color:${hex(e.def.color)};background:${hex(e.def.color)}"></span>${tierTag(e.def.quality)}</span>`;
       b.title = e.def.name;
       b.onclick = () => select(e.uid);
     } else { b.textContent = i + 1; b.disabled = true; }
@@ -60,7 +60,7 @@ function renderUI() {
   // Luck
   const odds = QUALITY_ODDS[game.qualityLevel];
   $('odds').innerHTML = odds.map((p, i) => (p ? `<span style="width:${p}%;background:${ODDS_COLORS[i]}" title="${QUALITIES[i]} ${p}%"></span>` : '')).join('');
-  $('odds-legend').innerHTML = odds.map((p, i) => `<span style="color:${p ? ODDS_COLORS[i] : ''}">${QUALITIES[i].slice(0, 3)} ${p}%</span>`).join('');
+  $('odds-legend').innerHTML = odds.map((p, i) => `<span style="color:${p ? ODDS_COLORS[i] : ''}" title="${QUALITIES[i]}">${tierTag(i)} ${p}%</span>`).join('');
   $('luck-level').textContent = `Nível ${game.qualityLevel}`;
   const maxed = game.qualityLevel >= QUALITY_ODDS.length - 1;
   const cost = qualityUpgradeCost(game.qualityLevel);
@@ -110,6 +110,7 @@ function renderSelection() {
   }
   const def = e.def;
   let html = `<h2><span class="swatch" style="color:${hex(def.color)};background:${hex(def.color)}"></span>${def.name}</h2>`;
+  if (def.base) html += `<div class="tier">${tierLabel(def.quality)}</div>`;
   if (e.pending) html += '<span class="tag">Nova nesta rodada</span>';
   else if (!def.base) html += '<span class="tag boss">Dragão</span>';
   html += towerStats(def, e);

@@ -5,6 +5,8 @@
 export const CELL = 64; // one square of the fine grid; gems are 2x2 squares
 
 export const QUALITIES = ['Partida', 'Pequena', 'Comum', 'Lustrosa', 'Perfeita', 'Ancestral'];
+export const tierTag = (q) => `T${q}`;
+export const tierLabel = (q) => `${tierTag(q)} · ${QUALITIES[q]}`;
 
 // Scale elements (the 8 base types).
 export const GEM_TYPES = {

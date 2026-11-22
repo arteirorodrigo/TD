@@ -5,7 +5,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { CELL } from './data/towers.js';
+import { CELL, tierTag } from './data/towers.js';
 import { PLATFORM, BLOCK } from './map.js';
 
 const U = (v) => v / CELL; // game units -> squares
@@ -115,6 +115,23 @@ function labelTexture(text, color = '#e9f1ff') {
   x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 8;
   x.fillText(text, 64, 70);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// Small dark pill with the tier tag (T0..T5), readable from the full-map view.
+const badgeCache = new Map();
+function badgeTexture(text) {
+  if (badgeCache.has(text)) return badgeCache.get(text);
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 64;
+  const x = c.getContext('2d');
+  x.fillStyle = 'rgba(12,10,8,.88)'; x.strokeStyle = 'rgba(255,214,150,.9)'; x.lineWidth = 4;
+  x.beginPath(); x.roundRect(4, 4, 120, 56, 26); x.fill(); x.stroke();
+  x.fillStyle = '#fff3dc'; x.font = '800 40px Inter, Arial, sans-serif';
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, 64, 34);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  badgeCache.set(text, t);
   return t;
 }
 
@@ -434,6 +451,9 @@ export class Renderer {
         pip.position.set(Math.cos(a) * 0.72, 0.24, Math.sin(a) * 0.72);
         grp.add(pip);
       }
+      const tl = new THREE.Sprite(new THREE.SpriteMaterial({ map: badgeTexture(tierTag(def.quality)), depthWrite: false, depthTest: false, toneMapped: false }));
+      tl.scale.set(1.8, 0.9, 1); tl.position.set(0.8, 1.6, -0.9); tl.renderOrder = 5;
+      grp.add(tl);
     }
     const pendingRing = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.05, 32), new THREE.MeshBasicMaterial({ color: 0x6f8fb8, transparent: true, opacity: 0.4, depthWrite: false }));
     pendingRing.rotation.x = -Math.PI / 2; pendingRing.position.y = 0.04;
