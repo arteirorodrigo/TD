@@ -34,4 +34,4 @@ O dono não é programador: fale em português simples, sem termos técnicos, e 
 1. Ataque por elemento: feito (projéteis com rastro, só dragões; `src/attack-fx.js`).
 2. Chocar dragão só com torres antigas: o dono acha perfeito assim (não mexer).
 3. Revisão feita e publicada. Falta: dragão sentado na construção / voando na onda.
-4. Ranking online com Firebase (Parte 2) — deixado para depois pelo dono.
+4. Ranking online com Firebase (Parte 2) — começando o planejamento (22/11): falta saber se é para amigos ou para o público.
