@@ -121,15 +121,15 @@ export class Renderer {
 
     const scene = this.scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0d13);
-    scene.fog = new THREE.Fog(0x0a0d13, 110, 220);
     const pmrem = new THREE.PMREMGenerator(r);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environmentIntensity = 0.55;
 
     const W = game.grid.w, H = game.grid.h;
     this.center = new THREE.Vector3(W / 2, 0, H / 2);
-    this.camera = new THREE.PerspectiveCamera(38, 1, 0.5, 400);
-    this.view = { target: this.center.clone(), dist: 78, yaw: 0, pitch: 1.12 };
+    this.camera = new THREE.PerspectiveCamera(30, 1, 0.5, 600);
+    // Top-down view, tilted just enough to keep the gems' volume readable.
+    this.view = { target: this.center.clone(), dist: 78, yaw: 0, pitch: 1.5 };
 
     scene.add(new THREE.HemisphereLight(0x8fb4ff, 0x10141c, 0.55));
     const sun = new THREE.DirectionalLight(0xfff2e0, 1.3);
@@ -248,17 +248,21 @@ export class Renderer {
     this.camera.aspect = w / h;
     // Fit the map on narrow screens
     const portrait = w < h * 0.9;
-    this.view.minDist = 16; this.view.maxDist = portrait ? 190 : 120;
+    this.view.minDist = 16; this.view.maxDist = portrait ? 280 : 180;
     if (!this.fitted) {
       // Frame the whole map, leaving room for the side dock (desktop) or the bottom sheet (phone).
       const W = this.game.grid.w, H = this.game.grid.h;
       const vfov = THREE.MathUtils.degToRad(this.camera.fov);
       const hfov = 2 * Math.atan(Math.tan(vfov / 2) * (w / h));
       const usableW = portrait ? 1 : Math.max(0.5, (w - 330) / w);
-      const needH = (H * 1.02) / (2 * Math.tan(vfov / 2)) * (portrait ? 1.7 : 1);
+      // On phones the map sits in the top ~55% of the screen, above the bottom sheet.
+      const usableH = portrait ? 0.55 : 0.9;
+      const needH = (H * 1.02) / (2 * Math.tan(vfov / 2) * usableH);
       const needW = (W * 1.05) / (2 * Math.tan(hfov / 2) * usableW);
       this.view.dist = Math.min(this.view.maxDist, Math.max(needH, needW));
-      this.view.target.set(W / 2 + (portrait ? 0 : this.view.dist * Math.tan(hfov / 2) * (1 - usableW)), 0, H / 2 + (portrait ? H * 0.2 : 2));
+      const visH = 2 * this.view.dist * Math.tan(vfov / 2);
+      this.view.target.set(W / 2 + (portrait ? 0 : this.view.dist * Math.tan(hfov / 2) * (1 - usableW)), 0,
+        H / 2 + (portrait ? visH * (0.5 - 0.36) : -visH * 0.02));
       this.fitted = true;
     }
     this.camera.updateProjectionMatrix();
