@@ -7,6 +7,15 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { CELL, tierTag } from './data/towers.js';
 import grassUrl from './assets/mapa_gramado.jpg';
+import dragonModelUrl from './assets/dragoes/dragao-obj.glb?url';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
+// Dragon look: 'escultura' = sculpted model (by a friend of the owner), tinted per dragon; 'padrao' = original
+// procedural dragon (also tagged in git as "modelo-padrao"). Change here to switch back.
+const DRAGON_MODEL = 'escultura';
+// The map is seen from above, so the sculpted dragon leans toward the camera (like a figure on a board) to show
+// its silhouette; it turns left/right around its own up axis to face targets.
+const DRAGON_TILT = -Math.PI / 2.4;
 import { PLATFORM, BLOCK } from './map.js';
 
 const U = (v) => v / CELL; // game units -> squares
@@ -242,6 +251,7 @@ export class Renderer {
     // Geometries shared by many meshes: never disposed with a single mesh.
     this.sharedGeos = new Set([this.scaleGeo, ...this.rockGeos, this.pedestalGeo, this.ringGeo, this.discGeo]);
     this.tmpQ = new THREE.Quaternion();
+    if (DRAGON_MODEL === 'escultura') this.loadDragonModel();
     this.upAxis = new THREE.Vector3(0, 1, 0);
 
     this.meshes = new Map(); // entity uid -> group
@@ -424,7 +434,7 @@ export class Renderer {
     const ped = new THREE.Mesh(this.pedestalGeo, this.pedestalMat);
     ped.position.y = 0.11; ped.castShadow = ped.receiveShadow = true;
     grp.add(ped);
-    let gem, wings = null, halo = null;
+    let gem, wings = null, halo = null, tilt = null;
     if (def.base) {
       // Scale rosette: more and bigger scales as quality rises.
       gem = new THREE.Group();
@@ -452,14 +462,24 @@ export class Renderer {
       }
       gem.position.y = 0.32;
     } else {
-      const dr = buildDragon(def.color, def.tier);
-      gem = dr.group; wings = dr.wings;
-      gem.position.y = 1.5;
+      if (this.dragonGeo) {
+        // Sculpted dragon sitting on the pedestal, painted in the dragon's color; bigger and shinier each stage.
+        const c = new THREE.Color(def.color);
+        const mat = new THREE.MeshStandardMaterial({ color: c, roughness: 0.42, metalness: def.tier >= 4 ? 0.55 : 0.22, emissive: c, emissiveIntensity: def.tier >= 4 ? 0.14 : 0.06 });
+        const body = new THREE.Mesh(this.dragonGeo, mat); body.castShadow = true;
+        body.scale.setScalar(1.6 + def.tier * 0.3);
+        gem = new THREE.Group(); gem.add(body); wings = [];
+        tilt = new THREE.Group(); tilt.rotation.x = DRAGON_TILT; tilt.position.set(0, 0.3, 0.35); tilt.add(gem);
+      } else {
+        const dr = buildDragon(def.color, def.tier);
+        gem = dr.group; wings = dr.wings;
+        gem.position.y = 1.5;
+      }
       const glow = new THREE.Mesh(this.discGeo, new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending }));
       glow.rotation.x = -Math.PI / 2; glow.position.y = 0.25; glow.scale.setScalar(1.1);
       grp.add(glow);
     }
-    grp.add(gem);
+    grp.add(tilt || gem);
     // quality pips on pedestal
     if (def.base) {
       for (let i = 0; i <= def.quality; i++) {
@@ -475,7 +495,7 @@ export class Renderer {
     const pendingRing = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.05, 32), new THREE.MeshBasicMaterial({ color: 0x6f8fb8, transparent: true, opacity: 0.4, depthWrite: false }));
     pendingRing.rotation.x = -Math.PI / 2; pendingRing.position.y = 0.04;
     grp.add(pendingRing);
-    grp.userData = { kind: 'gem', defId: def.id, gem, wings, dragon: !def.base, halo, pendingRing, baseY: gem.position.y, phase: e.uid * 0.7, yaw: e.uid };
+    grp.userData = { kind: 'gem', defId: def.id, gem, tilt, wings, dragon: !def.base, halo, pendingRing, baseY: gem.position.y, tiltY: tilt?.position.y, phase: e.uid * 0.7, yaw: e.uid };
     return grp;
   }
 
@@ -731,6 +751,28 @@ export class Renderer {
     });
   }
 
+  // Load the sculpted dragon once (already Y-up), face it toward +z, put its feet at y = 0 and
+  // its height at 1. Dragons already on the map are rebuilt with it.
+  loadDragonModel() {
+    new GLTFLoader().load(dragonModelUrl, (gltf) => {
+      let src = null; gltf.scene.traverse((o) => { if (o.isMesh && !src) src = o; });
+      if (!src) return;
+      const geo = src.geometry.clone();
+      geo.computeBoundingBox();
+      let b = geo.boundingBox;
+      geo.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
+      // Head = highest point: turn the model so it looks toward +z.
+      const pos = geo.attributes.position; let top = 0;
+      for (let i = 1; i < pos.count; i++) if (pos.getY(i) > pos.getY(top)) top = i;
+      geo.rotateY(-Math.atan2(pos.getX(top), pos.getZ(top)));
+      geo.computeBoundingBox(); b = geo.boundingBox;
+      const h = b.max.y - b.min.y; geo.scale(1 / h, 1 / h, 1 / h);
+      geo.computeVertexNormals();
+      this.dragonGeo = geo; this.sharedGeos.add(geo);
+      for (const [uid, m] of this.meshes) if (m.userData.dragon) { this.disposeGroup(m); this.meshes.delete(uid); }
+    });
+  }
+
   // Soft glowing arcs linking the stones of each combination available this round, plus a pulsing ring on each.
   showCombos(combos) {
     const key = combos.map((c) => c.result + ':' + c.uids.join(',')).join('|');
@@ -852,7 +894,14 @@ export class Renderer {
           } else ud.gem.rotation.y += dt * 0.15;
           const flap = Math.sin(this.time * (ent?.aim ? 9 : 4) + ud.phase);
           for (const w of ud.wings) w.pivot.rotation.z = w.sx * (0.15 + flap * 0.45);
-          ud.gem.position.y = ud.baseY + Math.sin(this.time * 2 + ud.phase) * 0.12;
+          if (this.dragonGeo) {
+            // Sits on the pedestal while building; takes off and hovers while enemies are on the field.
+            const fly = this.game.phase === 'wave' ? 1 : 0;
+            ud.lift = (ud.lift ?? fly) + (fly - (ud.lift ?? fly)) * Math.min(1, dt * 2.5);
+            const lifted = ud.lift * (1.4 + Math.sin(this.time * 2.2 + ud.phase) * 0.18);
+            if (ud.tilt) ud.tilt.position.y = ud.tiltY + lifted; else ud.gem.position.y = ud.baseY + lifted;
+            ud.gem.rotation.z = ud.lift * Math.sin(this.time * 2.2 + ud.phase) * 0.06;
+          } else ud.gem.position.y = ud.baseY + Math.sin(this.time * 2 + ud.phase) * 0.12;
         } else {
           ud.gem.rotation.y += dt * 0.5;
           ud.gem.position.y = ud.baseY + Math.sin(this.time * 1.6 + ud.phase) * 0.05 + ud.kick * 0.6;
