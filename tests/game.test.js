@@ -364,3 +364,48 @@ test('first-match tips are shown once and survive a broken storage', () => {
   assert.doesNotThrow(() => markTutorialSeen(broken));
   assert.equal(tutorialSeen(null), false);
 });
+
+test('burn aura and poison damage count in the tower "damage done"', () => {
+  const g = new Game();
+  const ids = ['R2', 'R1', 'P1', 'B1', 'B1'];
+  ids.forEach((id, i) => g.place(41 + 2 * i, 21, id));
+  const sel = g.pending[0];
+  assert.ok(g.special(sel, 'asteriatedRuby'));
+  const sal = g.entities.get(sel);
+  for (let i = 0; i < 3000 && g.phase === 'wave'; i++) g.update(1 / 30);
+  assert.ok((sal.damageDone || 0) > 0, 'salamander burn aura damage counted');
+});
+
+test('poison damage over time counts for the tower that poisoned', () => {
+  const g = new Game();
+  ['G1', 'G1', 'G1', 'G1', 'G1'].forEach((id, i) => g.place(41 + 2 * i, 21, id));
+  const keep = g.pending[0];
+  g.keep(keep);
+  const t = g.entities.get(keep);
+  let hitDmg = 0;
+  const orig = g.damage.bind(g);
+  g.damage = (en, amount, kind, uid, silent) => { if (uid === keep && !silent) hitDmg += amount * (kind === 'phys' ? 1 : 1); return orig(en, amount, kind, uid, silent); };
+  for (let i = 0; i < 3000 && g.phase === 'wave'; i++) g.update(1 / 30);
+  assert.ok(t.damageDone > hitDmg, `poison adds to damage done (${t.damageDone} vs hits ${hitDmg})`);
+});
+
+test('quitting before finishing any wave does not count as a record', () => {
+  const g = new Game(); g.quit();
+  assert.equal(g.countsForRecord(), false);
+  const h = new Game(); h.level = 2; h.quit();
+  assert.equal(h.countsForRecord(), true);
+  const d = new Game(); d.lives = 0; d.phase = 'over';
+  assert.equal(d.countsForRecord(), true);
+});
+
+test('quitting mid-wave clears the enemies on the map', () => {
+  const g = new Game();
+  ['D1', 'D1', 'D1', 'B1', 'Y1'].forEach((id, i) => g.place(41 + 2 * i, 21, id));
+  g.keep(g.pending[3]);
+  for (let i = 0; i < 90; i++) g.update(1 / 30);
+  assert.ok(g.enemies.size > 0);
+  g.quit();
+  assert.equal(g.enemies.size, 0);
+  assert.equal(g.spawnQueue.length, 0);
+  assert.equal(g.projectiles.length, 0);
+});

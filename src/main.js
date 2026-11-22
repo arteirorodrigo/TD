@@ -243,7 +243,7 @@ function renderWave() {
   $('wave-card').innerHTML = `<h3>${label} · ${units.length} inimigo${units.length > 1 ? 's' : ''}</h3>`
     + (warn ? `<p class="hint" style="color:#ffb3a0;margin:4px 0">⚠ ${warn}</p>` : '') + types.map((t) => `
     <div style="margin-top:6px"><b>${t.name}</b>
-      <div class="muted" style="font-variant-numeric:tabular-nums">Vida ${fmt(t.hp * HP_MULT)} · Vel. ${Math.round(t.speed * SPEED_MULT / CELL * 10) / 10} q/s · Armadura ${t.armor}</div>
+      <div class="muted" style="font-variant-numeric:tabular-nums">Vida ${fmt(Math.ceil(t.hp * HP_MULT))} · Vel. ${Math.round(t.speed * SPEED_MULT / CELL * 10) / 10} q/s · Armadura ${t.armor}</div>
       ${t.boss ? '<span class="tag boss">Chefe</span>' : ''}${t.air ? '<span class="tag air">Voador</span>' : '<span class="tag">Terrestre</span>'}${t.abilities.map((a) => `<span class="tag">${ABILITY_TEXT[a]}</span>`).join('')}
     </div>`).join('');
 }
@@ -275,7 +275,7 @@ function renderEnemyCard(card, en) {
   card.innerHTML = `<h2>${t.name}</h2>
     ${t.boss ? '<span class="tag boss">Chefe</span>' : ''}${t.air ? '<span class="tag air">Voador</span>' : '<span class="tag">Terrestre</span>'}
     <div class="hpbar"><span style="width:${(f * 100).toFixed(1)}%;background:hsl(${Math.round(120 * f)},80%,50%)"></span></div>
-    <div class="hptext">Vida ${fmt(Math.max(0, Math.ceil(en.hp)))} / ${fmt(en.maxHp)}</div>
+    <div class="hptext">Vida ${fmt(Math.max(0, Math.ceil(en.hp)))} / ${fmt(Math.ceil(en.maxHp))}</div>
     <dl class="stats">
       <dt>Armadura</dt><dd>${Math.round(game.effArmor(en))}</dd>
       <dt>Velocidade</dt><dd>${(Math.round(t.speed * SPEED_MULT / CELL * 10) / 10).toString().replace('.', ',')} q/s</dd>
@@ -360,7 +360,7 @@ function autoSelectBoss() {
 }
 
 function select(uid) { selectedUid = uid; selectedEnemyUid = null; renderUI(); }
-function selectEnemy(uid) { selectedUid = null; selectedEnemyUid = uid; renderSelection(); }
+function selectEnemy(uid) { selectedUid = null; selectedEnemyUid = uid; renderUI(); }
 
 function showRecipes({ inGame = true } = {}) {
   const have = new Map();
@@ -391,12 +391,13 @@ function showRecipes({ inGame = true } = {}) {
 }
 
 function showEnd() {
-  const { isNew } = submitRecord(store(), game.difficulty, game.level, game.lives);
+  const { isNew } = game.countsForRecord() ? submitRecord(store(), game.difficulty, game.level, game.lives) : { isNew: false };
+  const nT = game.towers().length, nK = game.kills;
   $('modal-body').className = 'sheet narrow';
-  $('modal-body').innerHTML = `<div class="center-msg"><div class="muted">${game.quitted ? 'Você deixou o ninho' : 'Suas vidas acabaram'} · ${DIFFICULTIES[game.difficulty].name}</div>
+  $('modal-body').innerHTML = `<div class="center-msg"><div class="muted">${game.quitted ? 'Você deixou o covil' : 'Suas vidas acabaram'} · ${DIFFICULTIES[game.difficulty].name}</div>
     <div class="big">Você chegou à fase ${game.level}</div>
     ${isNew ? '<div class="new-record">Novo recorde!</div>' : ''}
-    <p class="hint">${game.kills} inimigos derrotados · ${game.towers().length} defensores</p>
+    <p class="hint">${nK} ${nK === 1 ? 'inimigo derrotado' : 'inimigos derrotados'} · ${nT} ${nT === 1 ? 'defensor' : 'defensores'}</p>
     <div class="end-actions"><button class="btn primary" id="restart">Jogar de novo</button><button class="btn" id="to-menu">Menu</button></div></div>`;
   $('modal').hidden = false;
   $('restart').onclick = () => start(game.difficulty);
@@ -546,6 +547,9 @@ function confirmPlace() {
 function onTap(cx, cy) {
   const tl = tlFromPoint(cx, cy);
   if (!tl) return;
+  // Flyers hover over the stones: a tap on one picks the flyer, not the stone below it.
+  const flyer = game.phase === 'wave' && view.enemyAtScreen(cx, cy, 34, true);
+  if (flyer) { setAim(null); selectEnemy(flyer.uid === selectedEnemyUid ? null : flyer.uid); return; }
   const ent = game.entityAt(Math.floor(tl.fx), Math.floor(tl.fy));
   if (game.phase === 'edit') {
     if (ent) { game.removeRock(ent.uid); return; }
@@ -561,7 +565,7 @@ function onTap(cx, cy) {
     select(ent.uid); setAim({ x: ent.x, y: ent.y }); return;
   }
   if (ent) { setAim(null); select(ent.uid === selectedUid ? null : ent.uid); return; }
-  const en = game.enemyNear(tl.fx, tl.fy);
+  const en = view.enemyAtScreen(cx, cy) || game.enemyNear(tl.fx, tl.fy);
   if (en) { setAim(null); selectEnemy(en.uid === selectedEnemyUid ? null : en.uid); return; }
   if (game.phase === 'build') {
     if (aimSpot && aimSpot.x === tl.x && aimSpot.y === tl.y) { confirmPlace(); return; }

@@ -388,6 +388,22 @@ export class Renderer {
     return { x: hit.x, y: hit.z };
   }
 
+  // Enemy under a screen point, measured where it is drawn (flyers hover high above the ground,
+  // so a ground-plane pick misses them). Returns the closest within `px` pixels.
+  enemyAtScreen(clientX, clientY, px = 34, onlyAir = false) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = clientX - rect.left, y = clientY - rect.top;
+    let best = null, bestD = px;
+    for (const [uid, m] of this.enemyMeshes) {
+      const en = this.game.enemies.get(uid);
+      if (!en?.alive || !this.game.visible(en) || (onlyAir && !en.type.air)) continue;
+      const p = this.project(m.position.x, m.position.z, en.type.air ? 2.6 : 0.7);
+      const d = Math.hypot(p.x - x, p.y - y);
+      if (d <= bestD) { best = en; bestD = d; }
+    }
+    return best;
+  }
+
   project(x, y, z) {
     const v = new THREE.Vector3(x, z, y).project(this.camera);
     const rect = this.canvas.getBoundingClientRect();

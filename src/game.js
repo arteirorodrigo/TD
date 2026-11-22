@@ -336,8 +336,13 @@ export class Game {
     if (this.phase === 'over') return;
     this.phase = 'over';
     this.quitted = true;
+    // The wave in progress goes away with the player (no frozen enemies left on the map).
+    this.enemies.clear(); this.spawnQueue = []; this.projectiles = [];
     this.emit('over');
   }
+
+  // Leaving on phase 1 (no wave beaten) is not a result worth a record.
+  countsForRecord() { return !(this.quitted && this.level <= 1); }
 
   healLife() {
     if (this.lives >= this.maxLives) return;
@@ -390,7 +395,7 @@ export class Game {
             if (a.k === 'noMiss') t.noMiss = true;
           }
         } else if (['burnAura', 'antiAir', 'armorAura', 'iceAura', 'goldAura'].includes(a.k)) {
-          this.enemyAuras.push({ ...a, x: sx, y: sy });
+          this.enemyAuras.push({ ...a, x: sx, y: sy, src: src.uid });
         }
       }
     }
@@ -402,10 +407,10 @@ export class Game {
   }
 
   enemyAuraState(en) {
-    const s = { burn: 0, armor: 0, speed: 0, mr: 0, ice: 0 };
+    const s = { burn: 0, burns: [], armor: 0, speed: 0, mr: 0, ice: 0 };
     for (const a of this.enemyAuras) {
       if (Math.hypot(a.x - en.x, a.y - en.y) > a.radius) continue;
-      if (a.k === 'burnAura') s.burn += a.dps;
+      if (a.k === 'burnAura') { s.burn += a.dps; s.burns.push(a); }
       else if (a.k === 'armorAura') s.armor = Math.max(s.armor, a.amount);
       else if (a.k === 'iceAura') s.ice = Math.max(s.ice, a.pct);
       else if (a.k === 'antiAir' && en.type.air) { s.armor = Math.max(s.armor, a.armor); s.speed = Math.max(s.speed, a.speed); s.mr = Math.max(s.mr, a.mr); }
@@ -431,8 +436,9 @@ export class Game {
         this.fx.push({ t: 'cleanse', x: en.x, y: en.y });
       }
       // Damage over time (magic)
-      if (en.poison.t > 0) { en.poison.t -= dt; this.damage(en, en.poison.dps * dt, 'magic', null, true); }
-      if (aura.burn > 0) this.damage(en, aura.burn * dt, 'magic', null, true);
+      // (credited to the tower that poisoned / the dragon burning, for its "damage done")
+      if (en.poison.t > 0) { en.poison.t -= dt; this.damage(en, en.poison.dps * dt, 'magic', en.poison.src, true); }
+      for (const b of aura.burns) this.damage(en, b.dps * dt, 'magic', b.src, true);
       if (en.ab.has('regen')) en.hp = Math.min(en.maxHp, en.hp + 400 * dt);
       if (!en.alive) continue;
       if (en.stun > 0) { en.stun -= dt; continue; }
@@ -544,7 +550,7 @@ export class Game {
     for (const a of def.abilities) {
       switch (a.k) {
         case 'slow': if (!en.ab.has('magicImmune') || true) { en.slow.a = Math.max(en.slow.t > 0 ? en.slow.a : 0, a.amount); en.slow.t = a.dur; } break;
-        case 'poison': if (!en.ab.has('magicImmune')) { en.poison.dps = Math.max(en.poison.t > 0 ? en.poison.dps : 0, a.dps); en.poison.t = a.dur; } break;
+        case 'poison': if (!en.ab.has('magicImmune')) { if (!(en.poison.t > 0) || a.dps >= en.poison.dps) en.poison.src = p.tower; en.poison.dps = Math.max(en.poison.t > 0 ? en.poison.dps : 0, a.dps); en.poison.t = a.dur; } break;
         case 'armorShred': en.shred.a = Math.max(en.shred.t > 0 ? en.shred.a : 0, a.amount); en.shred.t = a.dur; break;
         case 'cleave':
           for (const o of this.enemies.values()) {
