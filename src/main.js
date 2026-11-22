@@ -32,15 +32,35 @@ function start(difficulty = 'medio', { editor = false, maze = null } = {}) {
     if (type === 'over') showEnd();
   });
   game.on((type, id) => {
-    if (type === 'hatch') markDiscovered(store(), id);
+    if (type === 'hatch') { markDiscovered(store(), id); startParty(id); }
     if (type === 'change' && tutorial === 'wait-choose' && game.phase === 'choose') showTip(3);
   });
   selectedUid = null; selectedEnemyUid = null;
   view.setGuide(editor ? null : guideMaze?.cells ?? null);
   $('tip').hidden = true; tutorial = null;
+  endParty();
   view.refreshCells();
   renderUI();
 }
+
+// ---------- Dragon hatch party ----------
+// ~2 s: camera leans in, bursts, "Novo dragão: X". The wave waits; a tap skips it.
+let party = null;
+function startParty(id) {
+  const e = game.entities.get(game.lastHatchUid);
+  if (!e) return;
+  party = { t: 0 };
+  view.celebrate(e, e.def.color);
+  $('party-name').textContent = TOWERS[id].name;
+  $('party').hidden = false;
+}
+function endParty() {
+  if (!party) return;
+  party = null;
+  $('party').hidden = true;
+  view.endCelebration();
+}
+window.addEventListener('pointerdown', () => { if (party && party.t > 0.2) endParty(); }, true);
 
 // ---------- First match tips ----------
 // 1: the path (with a ghost line walking it) → 2: stones make the path longer → (when 5 are placed) 3: keep one scale.
@@ -593,7 +613,8 @@ let last = performance.now(), uiTimer = 0;
 function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  let sim = screensOpen() || game.phase === 'over' ? 0 : dt * speed;
+  if (party && (party.t += dt) >= 2.2) endParty();
+  let sim = screensOpen() || game.phase === 'over' || party ? 0 : dt * speed;
   while (sim > 0) { const s = Math.min(sim, 1 / 40); game.update(s); sim -= s; }
   view.drainFx(floatText);
   view.frame(dt);

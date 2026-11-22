@@ -856,6 +856,40 @@ export class Renderer {
     this.scene.add(this.guideGroup);
   }
 
+  // A dragon hatched: the camera leans in on it, colored bursts and a big ring. No new geometry
+  // (particles are a fixed pool, rings share ringGeo). endCelebration() puts the camera back.
+  celebrate(entity, color) {
+    const v = this.view;
+    this.celebration = {
+      t: 0, color, x: entity.x + 1, z: entity.y + 1, bursts: 0,
+      from: { dist: v.dist, target: v.target.clone() },
+      to: { dist: Math.max(v.minDist, v.maxDist * 0.42), target: new THREE.Vector3(entity.x + 1, 0, entity.y + 1) },
+    };
+    this.addRing(entity.x + 1, entity.y + 1, 9, color, 1.2);
+  }
+
+  endCelebration() {
+    const c = this.celebration;
+    if (!c) return;
+    this.view.dist = c.from.dist; this.view.target.copy(c.from.target);
+    this.celebration = null;
+  }
+
+  updateCelebration(dt) {
+    const c = this.celebration;
+    if (!c) return;
+    c.t += dt;
+    const k = Math.min(1, c.t / 0.8), e = 1 - (1 - k) ** 3; // ease out
+    this.view.dist = c.from.dist + (c.to.dist - c.from.dist) * e;
+    this.view.target.lerpVectors(c.from.target, c.to.target, e);
+    if (c.bursts < 4 && c.t >= c.bursts * 0.3) {
+      this.burst(c.x, 1.4, c.z, c.color, 90, 9, 1.2);
+      this.burst(c.x, 1.4, c.z, 0xffffff, 30, 6, 0.8);
+      if (c.bursts === 2) this.addRing(c.x, c.z, 6, 0xffe2a0, 1);
+      c.bursts++;
+    }
+  }
+
   // First match: a short line of glowing "ghost" walkers runs the path from E to S once.
   previewPath(seconds = 3) {
     const path = this.game.path;
@@ -921,6 +955,7 @@ export class Renderer {
     }
     this.updateCamera();
     this.updatePathPreview(dt);
+    this.updateCelebration(dt);
     this.syncEntities();
     for (const [uid, m] of this.meshes) {
       const ud = m.userData;
