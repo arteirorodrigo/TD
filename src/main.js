@@ -1,7 +1,9 @@
-import { Game, STONES_PER_ROUND, QUALITY_ODDS, qualityUpgradeCost, toWorld } from './game.js';
+import { Game, DIFFICULTIES, STONES_PER_ROUND, QUALITY_ODDS, qualityUpgradeCost, toWorld } from './game.js';
 import { Renderer } from './render.js';
 import { TOWERS, QUALITIES, CELL, abilityText, tierTag, tierLabel } from './data/towers.js';
-import { waveFor, HP_MULT, SPEED_MULT, ABILITY_TEXT, MAX_LEVEL } from './data/enemies.js';
+import { waveFor, HP_MULT, SPEED_MULT, ABILITY_TEXT } from './data/enemies.js';
+import { initMenu, showMenu, hideScreens, screensOpen } from './menu.js';
+import { submitRecord } from './records.js';
 
 const $ = (id) => document.getElementById(id);
 const hex = (c) => '#' + c.toString(16).padStart(6, '0');
@@ -10,14 +12,18 @@ const ODDS_COLORS = ['#7c8798', '#4fb0ff', '#5fe3c0', '#c58bff', '#ffcc4d'];
 
 let game, view, selectedUid = null, selectedEnemyUid = null, speed = 1;
 
-function start() {
-  game = new Game();
+const store = () => { try { return window.localStorage; } catch { return null; } };
+
+function start(difficulty = 'medio') {
+  game = new Game({ difficulty });
+  $('modal').hidden = true;
+  hideScreens();
+  if (view) setSpeed(1);
   if (!view) view = new Renderer($('game'), game);
   else { view.game = game; for (const m of view.meshes.values()) view.disposeGroup(m); view.meshes.clear(); for (const m of view.enemyMeshes.values()) view.disposeGroup(m); view.enemyMeshes.clear(); }
   game.on((type) => {
     if (type === 'change') { view.refreshCells(); renderUI(); }
-    if (type === 'over') showEnd(false);
-    if (type === 'won') showEnd(true);
+    if (type === 'over') showEnd();
   });
   selectedUid = null; selectedEnemyUid = null;
   view.refreshCells();
@@ -30,12 +36,12 @@ function phaseText() {
   if (p === 'build') return `Coloque ${STONES_PER_ROUND - game.pending.length} pedra${STONES_PER_ROUND - game.pending.length === 1 ? '' : 's'} no mapa`;
   if (p === 'choose') return 'Escolha uma escama para manter, combinar ou chocar um dragão';
   if (p === 'wave') return `Onda ${game.level} em andamento`;
-  if (p === 'over') return 'Fim de jogo';
-  return 'Vitória!';
+  return 'Fim de jogo';
 }
 
 function renderUI() {
-  $('hud-level').textContent = `${Math.min(game.level, MAX_LEVEL)}/${MAX_LEVEL}`;
+  $('hud-level').textContent = game.level;
+  $('hud-diff').textContent = DIFFICULTIES[game.difficulty].name;
   $('hud-lives').textContent = game.lives;
   $('hud-gold').textContent = fmt(game.gold);
   const ph = $('hud-phase');
@@ -73,8 +79,7 @@ function renderUI() {
 }
 
 function renderWave() {
-  const lvl = Math.min(game.level, MAX_LEVEL);
-  const units = waveFor(lvl);
+  const units = waveFor(game.level);
   const types = [...new Map(units.map((u) => [u.id, u])).values()];
   const label = game.phase === 'wave' ? 'Onda atual' : 'Próxima onda';
   $('wave-card').innerHTML = `<h3>${label} · ${units.length} inimigo${units.length > 1 ? 's' : ''}</h3>` + types.map((t) => `
@@ -186,9 +191,9 @@ function renderSelection() {
 function select(uid) { selectedUid = uid; selectedEnemyUid = null; renderUI(); }
 function selectEnemy(uid) { selectedUid = null; selectedEnemyUid = uid; renderSelection(); }
 
-function showRecipes() {
+function showRecipes({ inGame = true } = {}) {
   const have = new Map();
-  for (const e of game.entities.values()) if (e.kind === 'gem') have.set(e.def.id, (have.get(e.def.id) || 0) + 1);
+  if (inGame) for (const e of game.entities.values()) if (e.kind === 'gem') have.set(e.def.id, (have.get(e.def.id) || 0) + 1);
   const specials = Object.values(TOWERS).filter((t) => !t.base);
   const card = (t) => {
     const recipes = [t.recipe, t.alt].filter(Boolean);
@@ -198,20 +203,45 @@ function showRecipes() {
       ${recipes.map((r, i) => `<div>${i ? '<span class="muted" style="font-size:12px">ou </span>' : ''}${r.map((id) => `<span class="ing ${have.get(id) ? 'have' : ''}">${TOWERS[id].name}</span>`).join('')}</div>`).join('')}
       <div class="muted" style="font-size:12px;margin-top:4px">${t.abilities.map(abilityText).join(' · ')}</div></div>`;
   };
-  $('modal-body').innerHTML = `<div class="row" style="justify-content:space-between;align-items:center"><h2>Dragões</h2><button class="btn" id="close-modal">Fechar</button></div>
-    <p class="hint">Cada dragão nasce de uma combinação de escamas. Na fase de escolha, selecione uma escama da receita para chocar o dragão. Ingredientes em verde já estão no mapa.</p>
+  $('modal-body').className = 'sheet' + (inGame ? '' : ' parch');
+  $('modal-body').innerHTML = `<div class="row" style="justify-content:space-between;align-items:center"><h2>${inGame ? 'Dragões' : 'Livro dos Dragões'}</h2><button class="btn" id="close-modal">Fechar</button></div>
+    <p class="hint">Cada dragão nasce de uma combinação de escamas. Na fase de escolha, selecione uma escama da receita para chocar o dragão.${inGame ? ' Ingredientes em destaque já estão no mapa.' : ''}</p>
     <div class="recipes">${specials.map(card).join('')}</div>`;
   $('modal').hidden = false;
   $('close-modal').onclick = () => ($('modal').hidden = true);
 }
 
-function showEnd(won) {
-  $('modal-body').innerHTML = `<div class="center-msg"><div class="muted">${won ? 'Os caçadores foram derrotados' : 'Suas vidas acabaram'}</div>
-    <div class="big">${won ? 'Vitória!' : `Nível ${game.level}`}</div>
+function showEnd() {
+  const { isNew } = submitRecord(store(), game.difficulty, game.level, game.lives);
+  $('modal-body').className = 'sheet narrow';
+  $('modal-body').innerHTML = `<div class="center-msg"><div class="muted">${game.quitted ? 'Você deixou o ninho' : 'Suas vidas acabaram'} · ${DIFFICULTIES[game.difficulty].name}</div>
+    <div class="big">Você chegou à fase ${game.level}</div>
+    ${isNew ? '<div class="new-record">Novo recorde!</div>' : ''}
     <p class="hint">${game.kills} inimigos derrotados · ${game.towers().length} defensores</p>
-    <button class="btn primary" id="restart">Jogar de novo</button></div>`;
+    <div class="end-actions"><button class="btn primary" id="restart">Jogar de novo</button><button class="btn" id="to-menu">Menu</button></div></div>`;
   $('modal').hidden = false;
-  $('restart').onclick = () => { $('modal').hidden = true; start(); };
+  $('restart').onclick = () => start(game.difficulty);
+  $('to-menu').onclick = () => { $('modal').hidden = true; showMenu(); };
+}
+
+function showRanking() {
+  $('modal-body').className = 'sheet parch narrow';
+  $('modal-body').innerHTML = `<div class="center-msg"><h2>Ranking</h2>
+    <p class="hint">Em breve: ranking com jogadores do mundo todo.</p>
+    <button class="btn" id="close-modal">Fechar</button></div>`;
+  $('modal').hidden = false;
+  $('close-modal').onclick = () => ($('modal').hidden = true);
+}
+
+function confirmQuit() {
+  if (game.phase === 'over') return;
+  $('modal-body').className = 'sheet narrow';
+  $('modal-body').innerHTML = `<div class="center-msg"><h2>Sair da partida?</h2>
+    <p class="hint">A fase atual conta como seu resultado.</p>
+    <div class="end-actions"><button class="btn primary" id="quit-yes">Sair</button><button class="btn" id="quit-no">Continuar jogando</button></div></div>`;
+  $('modal').hidden = false;
+  $('quit-no').onclick = () => ($('modal').hidden = true);
+  $('quit-yes').onclick = () => game.quit();
 }
 
 // ---------- Floating text ----------
@@ -366,8 +396,9 @@ function setSpeed(s) {
 }
 for (const v of [1, 2, 4]) $('sp' + v).onclick = () => setSpeed(v);
 $('btn-luck').onclick = () => game.upgradeQuality();
-$('btn-recipes').onclick = showRecipes;
-$('modal').addEventListener('click', (ev) => { if (ev.target === $('modal') && game.phase !== 'over' && game.phase !== 'won') $('modal').hidden = true; });
+$('btn-recipes').onclick = () => showRecipes();
+$('btn-menu').onclick = confirmQuit;
+$('modal').addEventListener('click', (ev) => { if (ev.target === $('modal') && game.phase !== 'over') $('modal').hidden = true; });
 window.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') { $('modal').hidden = true; select(null); setAim(null); }
   if (ev.key === 'Enter' && aimSpot) confirmPlace();
@@ -383,7 +414,7 @@ let last = performance.now(), uiTimer = 0;
 function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  let sim = dt * speed;
+  let sim = screensOpen() || game.phase === 'over' ? 0 : dt * speed;
   while (sim > 0) { const s = Math.min(sim, 1 / 40); game.update(s); sim -= s; }
   view.drainFx(floatText);
   view.frame(dt);
@@ -396,6 +427,8 @@ function loop(now) {
 }
 
 start();
+initMenu({ onPlay: (diff) => start(diff), onBook: () => showRecipes({ inGame: false }), onRanking: showRanking });
+showMenu();
 window.__game = () => game; // handy for debugging in the console
 window.__view = () => view;
 window.__towers = TOWERS;

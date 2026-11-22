@@ -7,7 +7,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Manrope:ital,wght@0,400;0,600;0,700;0,800;1,500&display=swap">
 <style>
 /* Layout: full-bleed 3D board; HUD strip on top, info dock on the right (bottom sheet on phones). */
 :root {
@@ -103,7 +103,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .confirm { position: fixed; transform: translate(-50%, calc(-100% - 34px)); display: flex; gap: 6px; z-index: 3; }
 .confirm .btn { box-shadow: 0 6px 18px rgba(0, 0, 0, .45); white-space: nowrap; }
-.modal { position: fixed; inset: 0; background: rgba(3, 5, 9, .7); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-left, 0px)); z-index: 5; }
+.modal { position: fixed; inset: 0; background: rgba(3, 5, 9, .7); display: grid; place-items: center; padding: max(16px, env(safe-area-inset-left, 0px)); z-index: 10; }
 .modal .sheet { width: min(860px, 100%); max-height: 86vh; overflow: auto; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
 .modal h2 { font: 700 22px var(--font-display); margin: 0 0 4px; }
 .recipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-top: 12px; }
@@ -114,6 +114,45 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .ing.have { background: rgba(255, 181, 71, .2); color: var(--accent); }
 .center-msg { text-align: center; }
 .center-msg .big { font: 700 34px var(--font-display); margin: 4px 0 6px; }
+
+
+/* ---------- Parchment screens (menu, levels, book, ranking, end) ---------- */
+.screen { position: fixed; inset: 0; z-index: 8; overflow: auto; color: #3b2414; background: #e9d3a8 var(--parch-img) center / cover;
+  display: flex; flex-direction: column; align-items: center; justify-content: safe center; text-align: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.screen::after { content: ""; position: fixed; inset: 0; box-shadow: inset 0 0 90px rgba(70, 35, 10, .55); pointer-events: none; }
+.screen .kick { font: 600 12px var(--font-display); letter-spacing: .3em; color: #7a5236; text-transform: uppercase; }
+.screen h1 { font: 700 clamp(28px, 6vw, 46px)/1.05 var(--font-display); margin: 4px 0; color: #3a2010; }
+.screen .rule { width: 170px; height: 1px; background: linear-gradient(90deg, transparent, #8a6a48, transparent); margin: 8px auto; }
+.screen .art { width: clamp(90px, 22vh, 190px); aspect-ratio: 1; background: var(--dragon-img) center / contain no-repeat; mix-blend-mode: multiply; margin: 4px 0; }
+.screen .tagline { font: italic 500 14px var(--font-body); color: #6b4c32; max-width: 360px; margin: 4px 0 12px; }
+.pbtn { font: 700 16px var(--font-display); letter-spacing: .14em; border-radius: 10px; padding: 12px 0; text-align: center; cursor: pointer; }
+.pbtn.dark { background: #3b2213; color: #f6e7cc; border: 0; box-shadow: 0 3px 0 #1f1109, 0 6px 14px rgba(60, 30, 10, .35); }
+.pbtn.dark:active { transform: translateY(2px); box-shadow: 0 1px 0 #1f1109; }
+.pbtn.line { border: 1.5px solid #5a3a22; color: #3b2214; background: rgba(255, 245, 225, .25); font-size: 13px; }
+.menu-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(380px, 100%); }
+.menu-btns .dark { grid-column: 1 / -1; }
+.screen .record { font: 600 12px var(--font-display); color: #6b4c32; letter-spacing: .06em; margin-top: 10px; min-height: 1em; }
+.banners { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin: 18px 0; }
+.banner { width: 124px; height: 168px; clip-path: polygon(0 0, 100% 0, 100% 74%, 50% 100%, 0 74%); background: linear-gradient(#4a2c17, #2c180c); color: #f4e3c4;
+  display: flex; flex-direction: column; align-items: center; padding-top: 22px; gap: 3px; font: 700 15px var(--font-display); border: 0; border-top: 4px solid #c8902f; }
+.banner:hover { filter: brightness(1.15); }
+.banner .n { font: 800 32px/1.1 var(--font-body); color: #ffb0a0; }
+.banner small { font: 600 11px var(--font-body); color: #d8bf9a; }
+.banner .rec { font: 600 10px var(--font-body); color: #e8c98a; margin-top: 4px; }
+.banner.danger { background: linear-gradient(#6e1a1a, #3a0c0c); border-top-color: #e2584e; }
+.back { position: fixed; left: max(18px, env(safe-area-inset-left, 0px)); bottom: max(14px, env(safe-area-inset-bottom, 0px)); background: none; border: 0; font: 600 14px var(--font-display); color: #5a3a22; z-index: 9; }
+.modal .sheet.parch { background: #ead6ad var(--parch-img) center / cover; color: #3b2414; border-color: #8a6a48; }
+.modal .sheet.parch .hint, .modal .sheet.parch .muted { color: #6b4c32; }
+.modal .sheet.parch .recipe { border-color: rgba(90, 58, 34, .35); background: rgba(255, 248, 232, .35); }
+.modal .sheet.parch .ing { background: rgba(90, 58, 34, .14); color: #3b2414; }
+.modal .sheet.parch .btn { background: #3b2213; color: #f6e7cc; border-color: transparent; }
+.modal .sheet.narrow { width: min(440px, 100%); }
+.end-actions { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
+.new-record { color: var(--gold); font: 700 15px var(--font-display); letter-spacing: .1em; }
+@media (max-height: 420px) { .screen .tagline, #scr-menu .kick { display: none; } .screen h1 { font-size: 26px; } .screen .rule { margin: 4px auto; } .screen .art { width: 74px; }
+  .pbtn { padding: 9px 0; } .screen .record { margin-top: 6px; } .banners { margin: 8px 0; } .banner { height: 140px; padding-top: 14px; } }
+@media (max-width: 560px) { .banners { display: grid; grid-template-columns: repeat(2, 124px); } }
 
 @media (max-width: 720px) {
   .chip { padding: 5px 9px; }
@@ -135,7 +174,9 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </div>
 
 <header class="hud">
-  <div class="chip"><span class="k">Nível</span><span class="v" id="hud-level">1/50</span></div>
+  <button class="btn" id="btn-menu">Menu</button>
+  <div class="chip"><span class="k">Fase</span><span class="v" id="hud-level">1</span></div>
+  <div class="chip"><span class="v" id="hud-diff" style="font-size:13px">Médio</span></div>
   <div class="chip lives"><span class="k">Vidas</span><span class="v" id="hud-lives">10</span></div>
   <div class="chip gold"><span class="k">Ouro</span><span class="v" id="hud-gold">0</span></div>
   <div class="phase" id="hud-phase">Coloque 5 pedras no mapa</div>
@@ -164,6 +205,25 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   </section>
   <section class="card wave-card" id="wave-card"></section>
 </aside>
+
+<section class="screen" id="scr-menu" hidden>
+  <div class="kick">Crônicas do</div>
+  <h1>Ninho dos Dragões</h1>
+  <div class="rule"></div>
+  <div class="art" role="img" aria-label="Dragão protegendo o ninho de escamas"></div>
+  <p class="tagline">Os caçadores querem o tesouro do ninho. Plante escamas, trace o labirinto e desperte os dragões.</p>
+  <div class="menu-btns">
+    <button class="pbtn dark" id="m-play">Jogar</button>
+    <button class="pbtn line" id="m-ranking">Ranking</button>
+    <button class="pbtn line" id="m-book">Livro dos Dragões</button>
+  </div>
+  <div class="record" id="m-record"></div>
+</section>
+<section class="screen" id="scr-levels" hidden>
+  <div class="kick">Escolha o nível</div>
+  <div class="banners" id="banners"></div>
+  <button class="back" id="lv-back">← Voltar</button>
+</section>
 
 <div class="modal" id="modal" hidden><div class="sheet" id="modal-body"></div></div>
 
