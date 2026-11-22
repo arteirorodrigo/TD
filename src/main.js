@@ -60,7 +60,19 @@ function endParty() {
   $('party').hidden = true;
   view.endCelebration();
 }
-window.addEventListener('pointerdown', () => { if (party && party.t > 0.2) endParty(); }, true);
+// The tap that skips the party is swallowed: it must not also press a button or pick a tower underneath.
+let swallowClick = false;
+window.addEventListener('pointerdown', (ev) => {
+  if (!party) return;
+  ev.stopPropagation(); ev.preventDefault();
+  swallowClick = true;
+  if (party.t > 0.2) endParty();
+}, true);
+for (const type of ['pointerup', 'click']) window.addEventListener(type, (ev) => {
+  if (!swallowClick) return;
+  ev.stopPropagation(); ev.preventDefault();
+  if (type === 'click') swallowClick = false;
+}, true);
 
 // ---------- First match tips ----------
 // 1: the path (with a ghost line walking it) → 2: stones make the path longer → (when 5 are placed) 3: keep one scale.
@@ -83,7 +95,7 @@ function showTip(n) {
 $('tip').onclick = () => {
   $('tip').hidden = true;
   if (tutorial === 1) showTip(2);
-  else if (tutorial === 2) tutorial = 'wait-choose';
+  else if (tutorial === 2) { tutorial = 'wait-choose'; if (game.phase === 'choose') showTip(3); }
   else if (tutorial === 3) { tutorial = null; markTutorialSeen(store()); }
 };
 

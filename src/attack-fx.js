@@ -45,7 +45,7 @@ export class AttackFx {
     this.shardGeo = new THREE.ConeGeometry(0.5, 2.6, 6); this.shardGeo.rotateX(Math.PI / 2);
     view.sharedGeos.add(this.orbGeo); view.sharedGeos.add(this.shardGeo);
     this.pool = [];
-    // Partículas próprias: maiores e sem somar luz (a cor do elemento aparece em vez de virar branco).
+    // Partículas próprias: maiores, com a cor atenuada (×0,55) para não estourar em branco quando se somam.
     const N = 2500, geo = new THREE.BufferGeometry();
     const pos = new Float32Array(N * 3).fill(-100), col = new Float32Array(N * 3);
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));

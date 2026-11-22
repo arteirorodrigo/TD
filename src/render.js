@@ -348,7 +348,7 @@ export class Renderer {
       const vfov = THREE.MathUtils.degToRad(this.camera.fov);
       const hfov = 2 * Math.atan(Math.tan(vfov / 2) * (w / h));
       // Phone lying down: narrow 240px panel on the right and a slim top bar.
-      const lying = !portrait && h <= 480;
+      const lying = w > h && h <= 480; // same test as the CSS (landscape, max-height 480px)
       const usableW = portrait ? 1 : lying ? (w - 262) / w : Math.max(0.5, (w - 330) / w);
       // On phones the map sits in the top ~55% of the screen, above the bottom sheet.
       const usableH = portrait ? 0.55 : lying ? (h - 50) / h : 0.9;
