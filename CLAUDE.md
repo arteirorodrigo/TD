@@ -1,6 +1,6 @@
 # O Covil dos Dragões TD (TD-DragonScale)
 
-Nome do jogo (decidido em 22/11): **O Covil dos Dragões TD** em português e **Dragons Lair TD** em inglês (antigo: Ninho dos Dragões).
+Nome do jogo (decidido em 22/11): **O Covil dos Dragões TD** em português e **Dragonscale TD** em inglês (antigo: Ninho dos Dragões; "Dragons Lair TD" foi descartado por ser marca de outro jogo).
 
 Tower defense de dragões no navegador (Three.js + Vite). Destino final: Play Store e outras lojas; o navegador é só para testar.
 O dono não é programador: fale em português simples, sem termos técnicos, e mostre fotos (prints) antes de decidir algo visual.
@@ -31,7 +31,7 @@ O dono não é programador: fale em português simples, sem termos técnicos, e 
 
 ## Pendências (22/11/2026, noite, branch `auditoria-1`, ainda não publicado)
 - Feito na noite de 22/11: tarefas 2–7 da auditoria (plano `docs/superpowers/plans/2026-11-22-auditoria-1.md`), pequenos erros (veneno/aura no dano, recorde na fase 1, plural, inimigos parados ao sair, clique em voadores, destaque da rodada, vida 15/14) e o nome novo.
-1. Ataque por elemento: 3 ideias em `docs/ataque-ideias/` (1 projéteis, 2 feixes, 3 sopro), testáveis com `?ataque=1|2|3` na URL (`src/attack-fx.js`). Aguardando o dono escolher.
+1. Ataque por elemento (**só nos dragões**; escamas ficam com o tiro de hoje): 3 ideias em `docs/ataque-ideias/` (1 projéteis, 2 feixes, 3 sopro), testáveis com `?ataque=1|2|3` na URL (`src/attack-fx.js`). Aguardando o dono escolher.
 2. Decisão pendente: chocar dragão só com torres antigas faz as 5 pedras novas virarem rocha.
 3. Revisão final do branch antes de publicar; dragão sentado na construção / voando na onda.
 4. Ranking online com Firebase (Parte 2) — deixado para depois pelo dono.

@@ -102,6 +102,15 @@ export class AttackFx {
     const game = this.view.game, ps = game.projectiles;
     let used = 0;
     for (const p of ps) {
+      if (p.def.base) {
+        // Escamas: o tiro de sempre (bolinha na cor da escama). Só os dragões ganham ataque por elemento.
+        const o = this.orb(used++), en0 = game.enemies.get(p.target);
+        o.shard.visible = false; o.orb.visible = true;
+        o.orb.position.set(U(p.x), en0 && en0.type.air ? 2.6 : 1.3, U(p.y));
+        o.orb.scale.setScalar(0.16);
+        o.mat.color.setHex(p.def.color).multiplyScalar(1.6); o.mat.opacity = 1;
+        continue;
+      }
       const el = ELEMENT_LOOK[elementOf(p.def)];
       const en = game.enemies.get(p.target);
       const y = en && en.type.air ? 2.6 : 1.3;
@@ -191,6 +200,7 @@ export class AttackFx {
 
   // Impacto no inimigo, com a cara do elemento.
   hit(f) {
+    if (!f.def || f.def.base) { this.view.burst(U(f.x), f.air ? 2.6 : 1.1, U(f.y), f.color, f.crit ? 18 : 5, f.crit ? 5 : 2.5, 0.3); return; }
     const el = ELEMENT_LOOK[elementOf(f.def)];
     const x = U(f.x), z = U(f.y), y = f.air ? 2.6 : 1.1;
     const n = f.crit ? 40 : 22;
