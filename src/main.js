@@ -74,8 +74,32 @@ function renderUI() {
   lb.textContent = maxed ? 'Máximo' : `Melhorar (${cost} ouro)`;
   lb.disabled = maxed || game.gold < cost;
 
+  renderCombos();
   renderWave();
   renderSelection();
+}
+
+function comboLabel(c) {
+  const name = (id) => TOWERS[id].name;
+  if (c.kind === 'combine') return `${c.uids.length} × ${name(game.entities.get(c.anchor).def.id)} → <b>${name(c.result)}</b>`;
+  const dragon = c.uids.map((u) => game.entities.get(u)).find((e) => !e.pending && !e.def.base);
+  return dragon ? `Evoluir ${dragon.def.name} → <b>${name(c.result)}</b>` : `Chocar <b>${name(c.result)}</b>`;
+}
+
+function renderCombos() {
+  const combos = game.roundCombos();
+  view.showCombos(combos);
+  $('combo-card').hidden = !combos.length;
+  if (!combos.length) return;
+  const can = game.phase === 'choose';
+  $('combos').innerHTML = combos.map((c, i) => `<div class="combo"><span>${comboLabel(c)}</span>
+    <button class="btn ${c.kind === 'special' ? 'special' : ''}" data-combo="${i}" ${can ? '' : 'disabled title="Coloque as 5 pedras primeiro"'}>${c.kind === 'special' ? 'Chocar' : 'Combinar'}</button></div>`).join('')
+    + (can ? '' : '<p class="hint" style="margin:6px 0 0">Coloque as 5 pedras para escolher.</p>');
+  $('combos').querySelectorAll('[data-combo]').forEach((b) => b.onclick = () => {
+    const c = combos[+b.dataset.combo];
+    if (c.kind === 'combine') game.combine(c.anchor); else game.special(c.anchor, c.result);
+    renderUI();
+  });
 }
 
 function renderWave() {
@@ -186,6 +210,15 @@ function renderSelection() {
     if (act === 'special') game.special(e.uid, b.dataset.id);
     renderUI();
   });
+}
+
+// A boss opens its card by itself when it enters the map (once per boss), unless the player is already watching an enemy.
+let bossShown = null;
+function autoSelectBoss() {
+  if (game.phase !== 'wave' || selectedEnemyUid || screensOpen()) return;
+  for (const en of game.enemies.values()) {
+    if (en.type.boss && en.alive && en.uid !== bossShown && game.visible(en)) { bossShown = en.uid; selectEnemy(en.uid); return; }
+  }
 }
 
 function select(uid) { selectedUid = uid; selectedEnemyUid = null; renderUI(); }
@@ -425,6 +458,7 @@ function loop(now) {
   updateFloaters(dt);
   updateConfirm();
   uiTimer += dt;
+  autoSelectBoss();
   if (selectedEnemyUid && uiTimer > 0.1) { uiTimer = 0; renderSelection(); }
   else if (uiTimer > 0.5 && selectedUid && game.phase === 'wave') { uiTimer = 0; renderSelection(); }
   requestAnimationFrame(loop);

@@ -721,6 +721,41 @@ export class Renderer {
     });
   }
 
+  // Soft glowing arcs linking the stones of each combination available this round, plus a pulsing ring on each.
+  showCombos(combos) {
+    const key = combos.map((c) => c.result + ':' + c.uids.join(',')).join('|');
+    if (key === this.comboKey) return;
+    this.comboKey = key;
+    if (this.comboGroup) { this.disposeGroup(this.comboGroup); this.comboGroup.traverse((o) => o.geometry?.dispose()); }
+    this.comboGroup = new THREE.Group();
+    this.comboMats = [];
+    const center = (uid) => { const e = this.game.entities.get(uid); return e && new THREE.Vector3(e.x + 1, 0.9, e.y + 1); };
+    const ringed = new Set();
+    for (const c of combos) {
+      const color = c.kind === 'special' ? 0xffc94a : 0xbfe4ff;
+      const a = center(c.anchor);
+      if (!a) continue;
+      for (const uid of c.uids) {
+        const b = center(uid);
+        if (!b) continue;
+        if (!ringed.has(uid)) {
+          ringed.add(uid);
+          const rm = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8, depthWrite: false, toneMapped: false });
+          const ring = new THREE.Mesh(new THREE.RingGeometry(1.05, 1.3, 40), rm);
+          ring.rotation.x = -Math.PI / 2; ring.position.set(b.x, 0.07, b.z);
+          this.comboGroup.add(ring); this.comboMats.push(rm);
+        }
+        if (uid === c.anchor) continue;
+        const mid = a.clone().add(b).multiplyScalar(0.5); mid.y += 1.2 + a.distanceTo(b) * 0.12;
+        const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
+        const lm = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
+        this.comboGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.15, 8, false), lm));
+        this.comboMats.push(lm);
+      }
+    }
+    this.scene.add(this.comboGroup);
+  }
+
   showEnemySelection(uid) {
     this.selectedEnemy = uid ?? null;
     if (!uid) this.enemyRing.visible = false;
@@ -749,6 +784,8 @@ export class Renderer {
     const gu = this.groundMat.uniforms.uGrid, gTarget = this.game.phase === 'wave' ? 0 : 1;
     gu.value += (gTarget - gu.value) * Math.min(1, dt * 4);
     for (const m of this.waypointMarks ?? []) m.opacity = (m.userData.baseOpacity ?? 1) * gu.value;
+    const pulse = 0.45 + 0.35 * Math.sin(this.time * 4);
+    for (const m of this.comboMats ?? []) m.opacity = pulse;
     this.updateCamera();
     this.syncEntities();
     for (const [uid, m] of this.meshes) {

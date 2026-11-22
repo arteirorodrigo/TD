@@ -160,6 +160,39 @@ export class Game {
     return out;
   }
 
+  // Combinations this round's stones already make possible, shown live while building.
+  // kind 'combine' = 2 or 4 equal new scales; kind 'special' = a recipe using at least one new scale
+  // (old towers, such as a dragon to upgrade, may complete it). anchor = the new scale to act on.
+  roundCombos() {
+    if (this.phase !== 'build' && this.phase !== 'choose') return [];
+    const pend = this.pendingEntities();
+    const out = [];
+    const groups = new Map();
+    for (const e of pend) groups.set(e.def.id, [...(groups.get(e.def.id) || []), e.uid]);
+    for (const uids of groups.values()) {
+      if (uids.length < 2) continue;
+      const info = this.combineInfo(uids[0]);
+      if (info) out.push({ kind: 'combine', result: info.result, anchor: uids[0], uids: uids.slice(0, info.steps === 2 ? 4 : 2) });
+    }
+    const pool = [...this.entities.values()].filter((e) => e.kind === 'gem');
+    for (const r of RECIPES) {
+      if (out.some((c) => c.result === r.result)) continue;
+      for (const anchor of pend) {
+        if (!r.ingredients.includes(anchor.def.id)) continue;
+        const used = new Set([anchor.uid]);
+        let anchorUsed = false, ok = true;
+        for (const ing of r.ingredients) {
+          if (!anchorUsed && ing === anchor.def.id) { anchorUsed = true; continue; }
+          const c = pool.filter((p) => !used.has(p.uid) && p.def.id === ing).sort((a, b) => (b.pending ? 1 : 0) - (a.pending ? 1 : 0))[0];
+          if (!c) { ok = false; break; }
+          used.add(c.uid);
+        }
+        if (ok) { out.push({ kind: 'special', result: r.result, anchor: anchor.uid, uids: [...used] }); break; }
+      }
+    }
+    return out;
+  }
+
   // Every recipe that uses this gem/dragon, with each ingredient marked as present on the field or not.
   evolutionInfo(uid) {
     const sel = this.entities.get(uid);

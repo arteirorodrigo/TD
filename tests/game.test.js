@@ -193,3 +193,29 @@ test('quit ends the match once', () => {
   assert.equal(g.quitted, true);
   assert.equal(n, 1);
 });
+
+test('roundCombos finds pairs and dragon upgrades as stones are placed', () => {
+  const g = new Game();
+  const sal = { uid: 900, x: 1, y: 1, kind: 'gem', def: TOWERS.asteriatedRuby, pending: false };
+  g.entities.set(900, sal);
+  g.place(41, 21, 'R4');
+  assert.deepEqual(g.roundCombos(), []);
+  g.place(45, 21, 'P3');
+  const evo = g.roundCombos().find((c) => c.result === 'volcano');
+  assert.equal(evo.kind, 'special');
+  assert.deepEqual(new Set(evo.uids), new Set([900, ...g.pending]));
+  assert.ok(g.pending.includes(evo.anchor));
+  g.place(49, 21, 'R4');
+  const pair = g.roundCombos().find((c) => c.kind === 'combine');
+  assert.equal(pair.result, 'R5');
+  assert.equal(pair.uids.length, 2);
+});
+
+test('roundCombos ignores recipes made only of old towers', () => {
+  const g = new Game();
+  g.entities.set(900, { uid: 900, x: 1, y: 1, kind: 'gem', def: TOWERS.B1, pending: false });
+  g.entities.set(901, { uid: 901, x: 5, y: 1, kind: 'gem', def: TOWERS.Y1, pending: false });
+  g.entities.set(902, { uid: 902, x: 9, y: 1, kind: 'gem', def: TOWERS.D1, pending: false });
+  g.place(41, 21, 'G2');
+  assert.equal(g.roundCombos().some((c) => c.result === 'silver'), false);
+});
