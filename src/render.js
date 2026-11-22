@@ -9,10 +9,12 @@ import { CELL, tierTag } from './data/towers.js';
 import grassUrl from './assets/mapa_gramado.jpg';
 import dragonModelUrl from './assets/dragoes/dragao-obj.glb?url';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { prepareDragonGeometry, stripWings, wingGeometry, buildHybridDragon } from './dragon-hybrid.js';
 
-// Dragon look: 'escultura' = sculpted model (by a friend of the owner), tinted per dragon; 'padrao' = original
+// Dragon look: 'hibrido' = sculpted body (by a friend of the owner) + procedural flapping wings, tinted per dragon;
+// 'escultura' = sculpted model alone (wings can't move); 'padrao' = original
 // procedural dragon (also tagged in git as "modelo-padrao"). Change here to switch back.
-const DRAGON_MODEL = 'padrao';
+const DRAGON_MODEL = 'hibrido';
 // The map is seen from above, so the sculpted dragon leans toward the camera (like a figure on a board) to show
 // its silhouette; it turns left/right around its own up axis to face targets.
 const DRAGON_TILT = -Math.PI / 2.4;
@@ -251,7 +253,7 @@ export class Renderer {
     // Geometries shared by many meshes: never disposed with a single mesh.
     this.sharedGeos = new Set([this.scaleGeo, ...this.rockGeos, this.pedestalGeo, this.ringGeo, this.discGeo]);
     this.tmpQ = new THREE.Quaternion();
-    if (DRAGON_MODEL === 'escultura') this.loadDragonModel();
+    if (DRAGON_MODEL !== 'padrao') this.loadDragonModel();
     this.upAxis = new THREE.Vector3(0, 1, 0);
 
     this.meshes = new Map(); // entity uid -> group
@@ -464,11 +466,15 @@ export class Renderer {
     } else {
       if (this.dragonGeo) {
         // Sculpted dragon sitting on the pedestal, painted in the dragon's color; bigger and shinier each stage.
-        const c = new THREE.Color(def.color);
-        const mat = new THREE.MeshStandardMaterial({ color: c, roughness: 0.42, metalness: def.tier >= 4 ? 0.55 : 0.22, emissive: c, emissiveIntensity: def.tier >= 4 ? 0.14 : 0.06 });
-        const body = new THREE.Mesh(this.dragonGeo, mat); body.castShadow = true;
+        let body;
+        if (this.wingGeo) { const h = buildHybridDragon(this.dragonGeo, this.wingGeo, def.color, def.tier); body = h.group; wings = h.wings; }
+        else {
+          const c = new THREE.Color(def.color);
+          const mat = new THREE.MeshStandardMaterial({ color: c, roughness: 0.42, metalness: def.tier >= 4 ? 0.55 : 0.22, emissive: c, emissiveIntensity: def.tier >= 4 ? 0.14 : 0.06 });
+          body = new THREE.Mesh(this.dragonGeo, mat); body.castShadow = true; wings = [];
+        }
         body.scale.setScalar(1.6 + def.tier * 0.3);
-        gem = new THREE.Group(); gem.add(body); wings = [];
+        gem = new THREE.Group(); gem.add(body);
         tilt = new THREE.Group(); tilt.rotation.x = DRAGON_TILT; tilt.position.set(0, 0.3, 0.35); tilt.add(gem);
         // Ground shadow that shows up when the dragon takes off.
         const sh = new THREE.Mesh(this.discGeo, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0, depthWrite: false }));
@@ -760,6 +766,13 @@ export class Renderer {
     new GLTFLoader().load(dragonModelUrl, (gltf) => {
       let src = null; gltf.scene.traverse((o) => { if (o.isMesh && !src) src = o; });
       if (!src) return;
+      if (DRAGON_MODEL === 'hibrido') {
+        const body = stripWings(prepareDragonGeometry(src.geometry)); body.computeVertexNormals();
+        this.dragonGeo = body; this.wingGeo = wingGeometry(0.85);
+        this.sharedGeos.add(body); this.sharedGeos.add(this.wingGeo.membrane); for (const b of this.wingGeo.bones) this.sharedGeos.add(b);
+        for (const [uid, m] of this.meshes) if (m.userData.dragon) { this.disposeGroup(m); this.meshes.delete(uid); }
+        return;
+      }
       const geo = src.geometry.clone();
       geo.computeBoundingBox();
       let b = geo.boundingBox;
@@ -896,7 +909,13 @@ export class Renderer {
             ud.gem.rotation.y += d * Math.min(1, dt * 8);
           } else ud.gem.rotation.y += dt * 0.15;
           const flap = Math.sin(this.time * (ent?.aim ? 9 : 4) + ud.phase);
-          for (const w of ud.wings) w.pivot.rotation.z = w.sx * (0.15 + flap * 0.45);
+          if (this.wingGeo) {
+            // Hybrid: wings folded up while sitting (slow breathing), full flaps while flying.
+            const fold = 1.25 + Math.sin(this.time * 1.5 + ud.phase) * 0.04;
+            const beat = 0.2 + Math.sin(this.time * 7 + ud.phase) * 0.55;
+            const l = ud.lift ?? 0;
+            for (const w of ud.wings) w.pivot.rotation.z = w.sx * (fold * (1 - l) + beat * l);
+          } else for (const w of ud.wings) w.pivot.rotation.z = w.sx * (0.15 + flap * 0.45);
           if (this.dragonGeo) {
             // Sits on the pedestal while building; takes off and hovers while enemies are on the field.
             const fly = this.game.phase === 'wave' ? 1 : 0;
