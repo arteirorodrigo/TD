@@ -7,6 +7,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { CELL, tierTag } from './data/towers.js';
 import { AttackFx } from './attack-fx.js';
+import { MAP_STYLE, makeParchmentCanvas } from './parchment-map.js';
 import grassUrl from './assets/mapa_gramado.jpg';
 import dragonModelUrl from './assets/dragoes/dragao-obj.glb?url';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -152,7 +153,7 @@ const GROUND_VERT = /* glsl */`
 varying vec2 vUv; varying vec3 vWorld;
 void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
 const GROUND_FRAG = /* glsl */`
-uniform sampler2D uCells; uniform sampler2D uGrass; uniform vec2 uSize; uniform float uTime; uniform float uGrid; uniform vec4 uHover; uniform vec3 uHoverColor;
+uniform sampler2D uCells; uniform sampler2D uGrass; uniform vec2 uSize; uniform float uTime; uniform float uGrid; uniform vec4 uHover; uniform vec3 uHoverColor; uniform float uParch;
 varying vec2 vUv; varying vec3 vWorld;
 float gridLine(vec2 p, float w){ vec2 g = abs(fract(p - .5) - .5) / fwidth(p); return 1. - min(min(g.x, g.y) / w, 1.); }
 void main(){
@@ -163,13 +164,13 @@ void main(){
   float inside = step(0., p.x) * step(0., p.y) * step(p.x, uSize.x) * step(p.y, uSize.y);
   vec3 base = mix(vec3(.15,.125,.11), vec3(.21,.18,.155), smoothstep(45., 0., length(p - uSize*.5)));
   vec3 grass = texture2D(uGrass, vec2(p.x / uSize.x, 1. - p.y / uSize.y)).rgb;
-  base = mix(base, grass * mix(.72, .62, uGrid), inside); // clearer grass while the grid is hidden
+  base = mix(base, grass * (uParch > .5 ? mix(1., .9, uGrid) : mix(.72, .62, uGrid)), inside); // clearer ground while the grid is hidden
   float fine = gridLine(p, 1.0) * .025 * uGrid;
   float major = gridLine((p - 1.) / 2., 1.2) * .2 * uGrid; // build cells: 2x2, starting on odd squares
   vec3 col = base + vec3(.55,.42,.30) * (fine + major);
   // path glow with a slow flowing pulse
   float flow = .55 + .45 * sin((p.x + p.y) * .35 - uTime * 2.2);
-  col = mix(col, vec3(.50,.38,.22) * (.9 + .15 * flow), path * .85);
+  col = mix(col, vec3(.50,.38,.22) * (.9 + .15 * flow), path * (uParch > .5 ? .18 : .85));
   col = mix(col, vec3(.42,.31,.14), plat * .85);
   col += vec3(1.,.75,.3) * plat * gridLine(p, 1.2) * .2 * uGrid;
   // hover footprint
@@ -227,7 +228,7 @@ export class Renderer {
     this.cellTex.magFilter = this.cellTex.minFilter = THREE.NearestFilter;
     this.groundMat = new THREE.ShaderMaterial({
       vertexShader: GROUND_VERT, fragmentShader: GROUND_FRAG,
-      uniforms: { uCells: { value: this.cellTex }, uGrass: { value: new THREE.TextureLoader().load(grassUrl) }, uSize: { value: new THREE.Vector2(W, H) }, uTime: { value: 0 }, uGrid: { value: 1 },
+      uniforms: { uCells: { value: this.cellTex }, uGrass: { value: MAP_STYLE ? (() => { const t = new THREE.CanvasTexture(makeParchmentCanvas()); t.anisotropy = 8; return t; })() : new THREE.TextureLoader().load(grassUrl) }, uParch: { value: MAP_STYLE ? 1 : 0 }, uSize: { value: new THREE.Vector2(W, H) }, uTime: { value: 0 }, uGrid: { value: 1 },
         uHover: { value: new THREE.Vector4(0, 0, 0, 0) }, uHoverColor: { value: new THREE.Color(0x3cff9a) } },
       extensions: { derivatives: true },
     });
