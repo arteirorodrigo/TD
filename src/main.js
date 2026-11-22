@@ -245,7 +245,7 @@ function renderSelection() {
   view.showSelection(e);
   if (e.kind === 'rock') {
     const can = game.phase === 'build' || game.phase === 'choose';
-    card.innerHTML = `<h2>Pedra</h2><p class="hint">Bloqueia o caminho como as escamas, mas não ataca.</p>
+    card.innerHTML = `<h2>Pedra</h2><p class="hint">Bloqueia o caminho como as escamas, mas não ataca.${game.phase === 'build' ? ' Na construção, dá para trocar esta pedra por uma das 5 novas: toque de novo nela ou em "Trocar a pedra".' : ''}</p>
       <div class="actions"><button class="btn" id="act-remove" ${can ? '' : 'disabled'}>Remover pedra</button></div>
       ${can ? '' : '<p class="hint">Só dá para remover entre as ondas.</p>'}`;
     $('act-remove').onclick = () => { game.removeRock(e.uid); select(null); };
@@ -459,6 +459,7 @@ function setAim(tl) {
   aimSpot = tl;
   view.setGhost(tl);
   $('confirm').hidden = !tl;
+  if (tl) $('confirm-ok').textContent = game.rockAt(tl.x, tl.y) ? 'Trocar a pedra' : 'Colocar aqui';
   if (tl) view.setHover(tl, true); else view.setHover(null);
 }
 function confirmPlace() {
@@ -481,6 +482,11 @@ function onTap(cx, cy) {
       if (inMap) floatText((tl.x + 1) * CELL, (tl.y + 1) * CELL, game.grid.canBuildAt(tl.x, tl.y) ? 'Fecha o caminho' : 'Não dá para colocar aqui', 'leak');
     }
     return;
+  }
+  // While building, an old rock can be swapped for a new stone: tap it to aim, tap again (or confirm) to place.
+  if (game.phase === 'build' && ent?.kind === 'rock' && game.canPlace(ent.x, ent.y)) {
+    if (aimSpot && aimSpot.x === ent.x && aimSpot.y === ent.y) { confirmPlace(); return; }
+    select(ent.uid); setAim({ x: ent.x, y: ent.y }); return;
   }
   if (ent) { setAim(null); select(ent.uid === selectedUid ? null : ent.uid); return; }
   const en = game.enemyNear(tl.fx, tl.fy);

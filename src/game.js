@@ -74,8 +74,11 @@ export class Game {
   // Stones snap to the 2x2 build grid, aligned with the waypoints and paths (odd squares),
   // so neighbouring stones always touch and never leave useless 1-square gaps.
   static aligned(x, y) { return x % 2 === 1 && y % 2 === 1; }
+  // An old rock exactly on (x, y) can be swapped for a new stone: same cell, so the path stays open.
+  rockAt(x, y) { const e = this.entityAt(x, y); return e && e.kind === 'rock' && e.x === x && e.y === y ? e : null; }
   canPlace(x, y) {
-    return this.phase === 'build' && this.pending.length < STONES_PER_ROUND && Game.aligned(x, y) && this.grid.tryBlock(x, y);
+    if (this.phase !== 'build' || this.pending.length >= STONES_PER_ROUND || !Game.aligned(x, y)) return false;
+    return !!this.rockAt(x, y) || this.grid.tryBlock(x, y);
   }
 
   rollGem() {
@@ -89,7 +92,9 @@ export class Game {
 
   place(x, y, forcedId = null) {
     if (!this.canPlace(x, y)) return null;
-    this.grid.block(x, y);
+    const old = this.rockAt(x, y);
+    if (old) this.entities.delete(old.uid); // the cell stays blocked: the new stone takes its place
+    else this.grid.block(x, y);
     const e = { uid: this.nextUid++, x, y, kind: 'gem', def: TOWERS[forcedId ?? this.rollGem()], pending: true, cooldown: 0 };
     this.entities.set(e.uid, e);
     this.pending.push(e.uid);

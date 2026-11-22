@@ -15,7 +15,12 @@ const port = 9300 + Math.floor(Math.random() * 500);
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'foto-jogo-'));
 const chrome = spawn('google-chrome', ['--headless=new', `--remote-debugging-port=${port}`, '--window-size=1400,900', '--use-gl=angle', '--enable-unsafe-swiftshader', `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const done = (code) => { chrome.kill(); fs.rmSync(profile, { recursive: true, force: true }); process.exit(code); };
+const done = async (code) => {
+  chrome.kill();
+  await new Promise((r) => setTimeout(r, 500)); // Chrome still writes its profile for a moment after closing
+  try { fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* temp folder, the system cleans it */ }
+  process.exit(code);
+};
 
 let tabs;
 for (let i = 0; i < 40 && !tabs; i++) { try { tabs = await (await fetch(`http://127.0.0.1:${port}/json`)).json(); } catch { await sleep(250); } }

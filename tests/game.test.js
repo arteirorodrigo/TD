@@ -267,3 +267,19 @@ test('a normal match refuses editor rocks', () => {
   const g = new Game();
   assert.equal(g.placeRock(41, 21), false);
 });
+
+test('a new stone can be placed over an old rock, replacing it', () => {
+  const g = new Game();
+  for (const x of [41, 43, 45, 47, 49]) g.place(x, 21);
+  g.keep(g.pending[0]);
+  g.enemies.clear(); g.spawnQueue = []; g.endWave();
+  const rock = g.entityAt(43, 21);
+  assert.equal(rock.kind, 'rock');
+  assert.ok(g.canPlace(43, 21));
+  const e = g.place(43, 21);
+  assert.ok(e);
+  assert.equal(e.kind, 'gem');
+  assert.equal(g.entities.has(rock.uid), false);
+  assert.equal(g.entityAt(43, 21).uid, e.uid);
+  assert.equal(g.canPlace(41, 21), false); // the kept scale (a tower) is never replaced
+});
