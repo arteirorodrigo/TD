@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Game } from '../src/game.js';
+import { Game, DIFFICULTIES } from '../src/game.js';
 import { Grid } from '../src/map.js';
 import { TOWERS, RECIPES, CELL, tierTag, tierLabel } from '../src/data/towers.js';
 
@@ -107,4 +107,21 @@ test('enemyNear skips enemies the player cannot see', () => {
   const g = new Game();
   g.enemies.set(1, { uid: 1, x: 10 * CELL, y: 10 * CELL, alive: true, ab: new Set(['invis']) });
   assert.equal(g.enemyNear(10, 10), null);
+});
+
+test('difficulty sets starting lives', () => {
+  assert.equal(new Game({ difficulty: 'facil' }).lives, 20);
+  assert.equal(new Game().lives, 10);
+  assert.equal(new Game({ difficulty: 'dificil' }).lives, 5);
+  assert.equal(new Game({ difficulty: 'sobrevivente' }).maxLives, 1);
+  assert.equal(DIFFICULTIES.sobrevivente.name, 'Sobrevivente');
+});
+
+test('heal never exceeds the difficulty max', () => {
+  const g = new Game({ difficulty: 'sobrevivente' });
+  g.healLife();
+  assert.equal(g.lives, 1);
+  const m = new Game();
+  m.lives = 7; m.healLife();
+  assert.equal(m.lives, 8);
 });

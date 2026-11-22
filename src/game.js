@@ -5,6 +5,12 @@ import { waveFor, bountyFor, HP_MULT, SPEED_MULT, MAX_LEVEL } from './data/enemi
 
 export const STONES_PER_ROUND = 5;
 export const START_LIVES = 10;
+export const DIFFICULTIES = {
+  facil: { name: 'Fácil', lives: 20 },
+  medio: { name: 'Médio', lives: 10 },
+  dificil: { name: 'Difícil', lives: 5 },
+  sobrevivente: { name: 'Sobrevivente', lives: 1 },
+};
 
 // Chance (%) of each quality [Lascada, Falha, Normal, Impecável, Perfeita] per quality level.
 export const QUALITY_ODDS = [
@@ -32,11 +38,13 @@ function armorMult(armor) {
 }
 
 export class Game {
-  constructor({ rng = Math.random } = {}) {
+  constructor({ rng = Math.random, difficulty = 'medio' } = {}) {
     this.rng = rng;
     this.grid = new Grid();
     this.level = 1;
-    this.lives = START_LIVES;
+    this.difficulty = DIFFICULTIES[difficulty] ? difficulty : 'medio';
+    this.maxLives = DIFFICULTIES[this.difficulty].lives;
+    this.lives = this.maxLives;
     this.gold = 0;
     this.qualityLevel = 0;
     this.phase = 'build'; // build | choose | wave | over | won
@@ -248,6 +256,12 @@ export class Game {
       if (d <= bestD) { best = en; bestD = d; }
     }
     return best;
+  }
+
+  healLife() {
+    if (this.lives >= this.maxLives) return;
+    this.lives++;
+    this.emit('change');
   }
 
   // ---------- Simulation ----------
@@ -466,7 +480,7 @@ export class Game {
           this.fx.push({ t: 'splash', x: en.x, y: en.y, r: a.radius, color: 0x9be8ff });
           break;
         case 'burnHit': this.damage(en, dmg * a.pct, 'magic', p.tower); break;
-        case 'heal': if (this.rng() < a.chance && this.lives < START_LIVES) { this.lives++; this.emit('change'); } break;
+        case 'heal': if (this.rng() < a.chance) this.healLife(); break;
       }
     }
     if (en.ab.has('reactive')) en.reactive = Math.min(en.reactive + 0.5, 30);
