@@ -7,8 +7,18 @@ Os auditores leem este arquivo antes de toda auditoria. O que está em "Não gos
 - **22/11 · jogabilidade 2:** mudar a escama Etérea para revelar invisíveis mais longe (fase 8). O dono não gostou; a fase 8 fica como está.
 - **22/11 · jogabilidade 3:** trocar "imune a dano físico" por "resistente" (40% do dano passa). O dono não gostou; as fases imunes ficam como estão.
 
+- **22/11 (2ª auditoria) · design 4:** barra de progresso da onda, selo "Onda vencida!" e avisos da Valquíria/chefe 50. O dono negou.
+
 ## Aprovadas e feitas (não repetir)
 - 22/11 · design 1, 2, 3 e 4; jogabilidade 1, 4 e 5 — ver `2026-11-22-design.md` e `2026-11-22-jogabilidade.md`.
+
+## Aprovadas, a fazer (2ª auditoria, 22/11 — ver `2026-11-22-2-*.md`)
+- **Design 1, com a versão do dono:** a trilha vermelha passa a ser o caminho real (muda quando a pedra entra). No leque (menu redondo) há um botão para mostrar ou esconder a trilha.
+- Design 2 (Manter sempre visível no celular deitado), design 3 (peças legíveis, junto com jogabilidade 3), design 5 (sentir a vida perdida).
+- Jogabilidade 3 (jogo mais leve no celular), jogabilidade 5 (poder do Perolado e do Ladrão), e os 5 pequenos erros.
+
+## Guardadas para ajustar depois
+O dono quer guardar e ajustar mais tarde: ver `ideias-guardadas.md` (chefe 50, Valquíria, sorte 9 e 10).
 
 ## Decisões fixas do dono (respeitar sempre)
 - T0–T5 fica nas escamas (Partida/Perfeita se confundiam).
