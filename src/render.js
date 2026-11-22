@@ -276,6 +276,7 @@ export class Renderer {
   buildWaypoints() {
     const g = this.game.grid;
     const n = g.waypoints.length;
+    this.waypointMarks = []; // numbered waypoints (not entry/exit) fade out during a wave
     g.waypoints.forEach((p, i) => {
       const isEnd = i === 0 || i === n - 1;
       const color = isEnd ? 0xff4a3a : 0xffc24a;
@@ -288,6 +289,11 @@ export class Renderer {
       const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(i === 0 ? 'E' : i === n - 1 ? 'S' : String(i), isEnd ? '#ffd0c8' : '#fff0cc'), depthWrite: false }));
       label.scale.set(2.2, 2.2, 1); label.position.y = 3.4;
       grp.add(ring, beam, label);
+      if (!isEnd) {
+        ring.material.transparent = true; label.material.transparent = true;
+        this.waypointMarks.push(ring.material, label.material, beam.material);
+        beam.material.userData.baseOpacity = beam.material.opacity;
+      }
       grp.userData = { ring, beam };
       this.scene.add(grp);
     });
@@ -742,6 +748,7 @@ export class Renderer {
     // Build grid fades out during a wave and back in for building.
     const gu = this.groundMat.uniforms.uGrid, gTarget = this.game.phase === 'wave' ? 0 : 1;
     gu.value += (gTarget - gu.value) * Math.min(1, dt * 4);
+    for (const m of this.waypointMarks ?? []) m.opacity = (m.userData.baseOpacity ?? 1) * gu.value;
     this.updateCamera();
     this.syncEntities();
     for (const [uid, m] of this.meshes) {
