@@ -28,7 +28,7 @@ function start(difficulty = 'medio', { editor = false, maze = null } = {}) {
   $('modal').hidden = true;
   hideScreens();
   if (view) setSpeed(1);
-  if (!view) view = new Renderer($('game'), game);
+  if (!view) { view = new Renderer($('game'), game); view.setTrailVisible(readTrail()); }
   else { view.game = game; for (const m of view.meshes.values()) view.disposeGroup(m); view.meshes.clear(); for (const m of view.enemyMeshes.values()) view.disposeGroup(m); view.enemyMeshes.clear(); }
   game.on((type) => {
     if (type === 'change') { view.refreshCells(); renderUI(); }
@@ -677,6 +677,12 @@ function setFan(open) { document.body.classList.toggle('fan-open', open); $('fab
 $('fab').onclick = () => setFan(!document.body.classList.contains('fan-open'));
 $('fan-scrim').onclick = () => setFan(false);
 for (const id of ['btn-menu', 'btn-fit', 'btn-guide', 'btn-recipes']) $(id).addEventListener('click', () => setFan(false));
+// Botão "Trilha" no leque: mostra ou esconde a trilha do caminho (fica guardado no aparelho).
+function readTrail() { try { return localStorage.getItem('covil-trilha') !== '0'; } catch { return true; } }
+let trailOn = readTrail();
+function applyTrail() { view?.setTrailVisible(trailOn); $('fan-trail').classList.toggle('on', trailOn); $('fan-trail').setAttribute('aria-pressed', String(trailOn)); }
+$('fan-trail').onclick = () => { trailOn = !trailOn; try { localStorage.setItem('covil-trilha', trailOn ? '1' : '0'); } catch { /* ignora */ } applyTrail(); };
+applyTrail();
 $('fan-speed').onclick = () => setSpeed(speed === 1 ? 2 : speed === 2 ? 4 : 1);
 $('fan-wave').onclick = () => { const on = $('wave-card').classList.toggle('show'); $('wave-card').classList.add('open'); $('fan-wave').classList.toggle('on', on); setFan(false); };
 

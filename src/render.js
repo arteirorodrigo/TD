@@ -10,7 +10,7 @@ import { AttackFx } from './attack-fx.js';
 import { MAP_STYLE, makeParchmentCanvas, mapMargin } from './parchment-map.js';
 const MARGIN = mapMargin();
 import grassUrl from './assets/mapa_gramado.jpg';
-import mapaPergaminhoUrl from './assets/mapa-pergaminho.jpg'; // mapa padrão (mapa_certo.jpeg no molde, trilha pelos pontos E,1–6,S)
+import mapaPergaminhoUrl from './assets/mapa-pergaminho-sem-trilha.jpg'; // mapa padrão sem a trilha pintada (2ª auditoria): a trilha vermelha agora é desenhada pelo jogo e segue o caminho real
 const MAPA_IMAGEM = MAP_STYLE === 22 ? mapaPergaminhoUrl : null;
 import dragonModelUrl from './assets/dragoes/dragao-obj.glb?url';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -340,7 +340,54 @@ export class Renderer {
       const x = c.x + dx, y = c.y + dy; if (x < g.w && y < g.h) d[(y * g.w + x) * 4] = 255;
     }
     this.cellTex.needsUpdate = true;
+    this.updateTrail();
   }
+
+  // Trilha vermelha tracejada que segue o caminho real (2ª auditoria, design 1). Uma peça só, refeita quando o caminho muda.
+  updateTrail() {
+    const path = this.game.path;
+    if (!this.trailMat) {
+      this.trailMat = new THREE.ShaderMaterial({
+        transparent: true, depthWrite: false, side: THREE.DoubleSide,
+        uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(0x9a1c12) } },
+        vertexShader: 'attribute float aDist; varying float vD; varying float vSide; attribute float aSide; void main(){ vD = aDist; vSide = aSide; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+        fragmentShader: 'uniform float uTime; uniform vec3 uColor; varying float vD; varying float vSide; void main(){ float d = fract(vD / 1.5 - uTime * .35); float a = smoothstep(.0, .06, d) * (1. - smoothstep(.52, .58, d)); float edge = 1. - smoothstep(.75, 1., abs(vSide)); if (a * edge < .02) discard; gl_FragColor = vec4(uColor, .92 * a * edge); }',
+      });
+      this.trail = new THREE.Mesh(new THREE.BufferGeometry(), this.trailMat);
+      this.trail.renderOrder = 1; this.trail.frustumCulled = false;
+      this.trail.visible = this.trailOn !== false;
+      this.scene.add(this.trail);
+    }
+    if (!path?.length) { this.trail.geometry.setDrawRange(0, 0); return; }
+    // keep only the corners
+    const pts = [];
+    for (let i = 0; i < path.length; i++) {
+      const p = { x: path[i].x + 1, y: path[i].y + 1 };
+      if (pts.length >= 2) {
+        const a = pts[pts.length - 2], b = pts[pts.length - 1];
+        if ((b.x - a.x) * (p.y - b.y) === (b.y - a.y) * (p.x - b.x)) { pts[pts.length - 1] = p; continue; }
+      }
+      pts.push(p);
+    }
+    const w = 0.2, pos = [], dist = [], side = [], idx = [];
+    let acc = 0;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1], dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len * w, ny = dx / len * w, ex = dx / len * w, ey = dy / len * w; // extend a bit to cover the corners
+      const v = pos.length / 3;
+      pos.push(a.x - ex + nx, 0.03, a.y - ey + ny, a.x - ex - nx, 0.03, a.y - ey - ny, b.x + ex + nx, 0.03, b.y + ey + ny, b.x + ex - nx, 0.03, b.y + ey - ny);
+      dist.push(acc - w, acc - w, acc + len + w, acc + len + w); side.push(1, -1, 1, -1);
+      idx.push(v, v + 1, v + 2, v + 1, v + 3, v + 2);
+      acc += len;
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('aDist', new THREE.Float32BufferAttribute(dist, 1));
+    g.setAttribute('aSide', new THREE.Float32BufferAttribute(side, 1));
+    g.setIndex(idx);
+    this.trail.geometry.dispose(); this.trail.geometry = g;
+  }
+  setTrailVisible(on) { this.trailOn = on; if (this.trail) this.trail.visible = on; }
 
   resize() {
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
@@ -969,6 +1016,7 @@ export class Renderer {
   frame(dt) {
     this.time += dt;
     this.groundMat.uniforms.uTime.value = this.time;
+    if (this.trailMat) this.trailMat.uniforms.uTime.value = this.time;
     // Build grid fades out during a wave and back in for building.
     const gu = this.groundMat.uniforms.uGrid, gTarget = this.game.phase === 'wave' ? 0 : 1;
     gu.value += (gTarget - gu.value) * Math.min(1, dt * 4);
