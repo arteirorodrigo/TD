@@ -731,26 +731,40 @@ export class Renderer {
     this.comboMats = [];
     const center = (uid) => { const e = this.game.entities.get(uid); return e && new THREE.Vector3(e.x + 1, 0.9, e.y + 1); };
     const ringed = new Set();
+    this.comboSparks = [];
     for (const c of combos) {
       const color = c.kind === 'special' ? 0xffc94a : 0xbfe4ff;
-      const a = center(c.anchor);
-      if (!a) continue;
+      // Arcs flow from each other piece into the target: the dragon being upgraded if there is one, else the anchor stone.
+      const dragon = c.uids.map((u) => this.game.entities.get(u)).find((e) => e && !e.pending && !e.def.base);
+      const target = dragon ? dragon.uid : c.anchor;
+      const t = center(target);
+      if (!t) continue;
       for (const uid of c.uids) {
-        const b = center(uid);
-        if (!b) continue;
+        const o = center(uid);
+        if (!o) continue;
         if (!ringed.has(uid)) {
           ringed.add(uid);
           const rm = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8, depthWrite: false, toneMapped: false });
           const ring = new THREE.Mesh(new THREE.RingGeometry(1.05, 1.3, 40), rm);
-          ring.rotation.x = -Math.PI / 2; ring.position.set(b.x, 0.07, b.z);
+          ring.rotation.x = -Math.PI / 2; ring.position.set(o.x, 0.07, o.z);
           this.comboGroup.add(ring); this.comboMats.push(rm);
         }
-        if (uid === c.anchor) continue;
-        const mid = a.clone().add(b).multiplyScalar(0.5); mid.y += 1.2 + a.distanceTo(b) * 0.12;
-        const curve = new THREE.QuadraticBezierCurve3(a, mid, b);
+        if (uid === target) continue;
+        // Rise from the origin, bow sideways (so the curve reads from the top-down camera), land on the target.
+        const len = o.distanceTo(t);
+        const dir = t.clone().sub(o).normalize();
+        const side = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(len * 0.22);
+        const lift = 2 + len * 0.15;
+        const curve = new THREE.CubicBezierCurve3(o,
+          o.clone().lerp(t, 0.25).add(side).setY(o.y + lift),
+          o.clone().lerp(t, 0.75).add(side).setY(t.y + lift),
+          t);
         const lm = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
-        this.comboGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.15, 8, false), lm));
+        this.comboGroup.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 0.12, 8, false), lm));
         this.comboMats.push(lm);
+        const spark = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+        this.comboGroup.add(spark);
+        this.comboSparks.push({ mesh: spark, curve, phase: Math.random() });
       }
     }
     this.scene.add(this.comboGroup);
@@ -786,6 +800,11 @@ export class Renderer {
     for (const m of this.waypointMarks ?? []) m.opacity = (m.userData.baseOpacity ?? 1) * gu.value;
     const pulse = 0.45 + 0.35 * Math.sin(this.time * 4);
     for (const m of this.comboMats ?? []) m.opacity = pulse;
+    for (const sp of this.comboSparks ?? []) {
+      const k = (this.time * 0.45 + sp.phase) % 1;
+      sp.mesh.position.copy(sp.curve.getPoint(k));
+      sp.mesh.material.opacity = Math.sin(k * Math.PI); // fades in at the stone, out at the dragon
+    }
     this.updateCamera();
     this.syncEntities();
     for (const [uid, m] of this.meshes) {
