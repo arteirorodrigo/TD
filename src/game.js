@@ -315,7 +315,7 @@ export class Game {
       x: pts[0].x, y: pts[0].y, seg: 0, pts, progress: 0,
       ab: new Set(type.abilities), slow: { a: 0, t: 0 }, poison: { dps: 0, t: 0 },
       shred: { a: 0, t: 0 }, frost: { p: 0, t: 0 }, stun: 0, rushT: 0,
-      shield: 0, reactive: 0, krakenT: 10, dir: null, alive: true, hitFlash: 0,
+      shield: 0, reactive: 0, stolen: 0, krakenT: 10, dir: null, alive: true, hitFlash: 0,
     };
     this.enemies.set(en.uid, en);
   }
@@ -400,9 +400,12 @@ export class Game {
       }
     }
     // Enemy disarm auras
+    // Dragão Perolado: towers near it cannot be disarmed.
+    const guards = towers.flatMap((g) => g.def.abilities.filter((a) => a.k === 'antiDisarm').map((a) => ({ x: toWorld(g.x), y: toWorld(g.y), r: a.radius })));
+    const guarded = (t) => guards.some((gd) => Math.hypot(toWorld(t.x) - gd.x, toWorld(t.y) - gd.y) <= gd.r);
     for (const en of this.enemies.values()) {
       if (!en.ab.has('disarm')) continue;
-      for (const t of towers) if (Math.hypot(toWorld(t.x) - en.x, toWorld(t.y) - en.y) < DISARM_RADIUS) t.disarmed = true;
+      for (const t of towers) if (Math.hypot(toWorld(t.x) - en.x, toWorld(t.y) - en.y) < DISARM_RADIUS && !guarded(t)) t.disarmed = true;
     }
   }
 
@@ -441,6 +444,7 @@ export class Game {
       for (const b of aura.burns) this.damage(en, b.dps * dt, 'magic', b.src, true);
       if (en.ab.has('regen')) en.hp = Math.min(en.maxHp, en.hp + 400 * dt);
       if (!en.alive) continue;
+      if (en.stolen > 0) en.stolen -= dt;
       if (en.stun > 0) { en.stun -= dt; continue; }
       let speed = en.type.speed * SPEED_MULT - en.slow.a - aura.speed;
       speed = Math.max(100, speed);
@@ -474,7 +478,7 @@ export class Game {
 
   onTurn(en) {
     if (en.ab.has('rush') && this.rng() < 0.2) en.rushT = 1.5;
-    if (en.ab.has('refraction') && this.rng() < 0.15) { en.shield = 2; this.fx.push({ t: 'shield', uid: en.uid }); }
+    if (en.ab.has('refraction') && !(en.stolen > 0) && this.rng() < 0.15) { en.shield = 2; this.fx.push({ t: 'shield', uid: en.uid }); }
     if (en.ab.has('blink') && this.rng() < 0.1) {
       const fromX = en.x, fromY = en.y;
       this.moveEnemy(en, 384);
@@ -541,8 +545,9 @@ export class Game {
 
   hit(p, en) {
     const def = p.def;
-    if (en.ab.has('evasion') && !p.noMiss && this.rng() < 0.5) { this.fx.push({ t: 'miss', x: en.x, y: en.y }); return; }
-    if (en.shield > 0) { en.shield--; this.fx.push({ t: 'block', x: en.x, y: en.y }); return; }
+    const stolen = en.stolen > 0; // Dragão Ladrão took its Evasion and Refraction
+    if (en.ab.has('evasion') && !stolen && !p.noMiss && this.rng() < 0.5) { this.fx.push({ t: 'miss', x: en.x, y: en.y }); return; }
+    if (en.shield > 0 && !stolen) { en.shield--; this.fx.push({ t: 'block', x: en.x, y: en.y }); return; }
     let dmg = def.dmg * (1 + p.buffDmg);
     let crit = false;
     for (const a of def.abilities) if (a.k === 'crit' && this.rng() < a.chance) { dmg *= a.mult; crit = true; }
@@ -569,6 +574,12 @@ export class Game {
           break;
         case 'burnHit': this.damage(en, dmg * a.pct, 'magic', p.tower); break;
         case 'heal': if (this.rng() < a.chance) this.healLife(); break;
+        case 'steal':
+          if (en.ab.has('evasion') || en.ab.has('refraction')) {
+            if (!(en.stolen > 0)) this.fx.push({ t: 'stolen', x: en.x, y: en.y });
+            en.stolen = a.dur; en.shield = 0;
+          }
+          break;
       }
     }
     if (en.ab.has('reactive')) en.reactive = Math.min(en.reactive + 0.5, 30);

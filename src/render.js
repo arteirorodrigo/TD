@@ -817,6 +817,7 @@ export class Renderer {
         case 'leak': this.burst(U(f.x), 1, U(f.y), 0xff3048, 40, 6, 0.8); onText?.(f.x, f.y, f.lost > 1 ? `−${f.lost} vidas` : '−1 vida', 'life', f.lost); break;
         case 'miss': onText?.(f.x, f.y, 'errou', 'miss'); break;
         case 'block': onText?.(f.x, f.y, 'bloqueou', 'miss'); break;
+        case 'stolen': onText?.(f.x, f.y, 'roubada!', 'crit'); break;
         case 'jackpot': onText?.(f.x, f.y, '10x ouro!', 'gold'); break;
         case 'blink': this.burst(U(f.x), 1, U(f.y), 0xb48cff, 16, 3, 0.4); this.burst(U(f.x2), 1, U(f.y2), 0xb48cff, 16, 3, 0.4); break;
         case 'shoot': { const m = this.meshes.get(f.uid); if (m?.userData.gem) m.userData.kick = 0.15; break; }

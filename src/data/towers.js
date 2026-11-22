@@ -89,10 +89,10 @@ const SPECIALS = [
   ['paraiba', 'Dragão das Marés', 30, 0.6, 600, ['Q5', 'E4', 'G2'], null, [{ k: 'armorAura', amount: 15, radius: 800 }], 0x2ae6ff, 2],
   ['carvedTourmaline', 'Leviatã', 130, 0.6, 700, ['paraiba', 'darkEmerald', 'G2'], null, [{ k: 'stun', chance: 0.1, dur: 2 }, { k: 'armorAura', amount: 30, radius: 1200 }], 0x1fd0ff, 3],
   ['starOfAdam', 'Leviatã Ancestral', 42, 1, 800, ['carvedTourmaline', 'G6', 'P6'], ['G1', 'G2', 'G3', 'G4', 'G5'], [{ k: 'poison', dps: 128, dur: 5 }, { k: 'armorShred', amount: 64, dur: 5 }, { k: 'armorAura', amount: 30, radius: 1200 }, { k: 'frost', radius: 300, pct: 0.5, dur: 3 }], 0x3a8cff, 4],
-  ['deepSeaPearl', 'Dragão Perolado', 80, 0.6, 500, ['Q4', 'D4', 'E2'], null, [], 0xe6f6ff, 2],
+  ['deepSeaPearl', 'Dragão Perolado', 80, 0.6, 500, ['Q4', 'D4', 'E2'], null, [{ k: 'antiDisarm', radius: 384 }], 0xe6f6ff, 2],
   ['catsEye', 'Dragão Inspirador', 6, 1, 500, ['E5', 'D4', 'Q3'], null, [{ k: 'auraAS', value: 60, radius: 664 }, { k: 'trueSight' }, { k: 'dmgAura', pct: 0.5, radius: 500 }], 0xd8ff6a, 2],
   ['redCoral', 'Dragão Coral', 120, 0.6, 500, ['catsEye', 'deepSeaPearl', 'E4'], null, [{ k: 'auraAS', value: 60, radius: 664 }, { k: 'trueSight' }, { k: 'dmgAura', pct: 0.5, radius: 500 }], 0xff5a5a, 3],
-  ['zumurud', 'Dragão Ladrão', 80, 1, 500, ['deepSeaPearl', 'G5', 'D3'], null, [], 0x1ac46a, 3],
+  ['zumurud', 'Dragão Ladrão', 80, 1, 500, ['deepSeaPearl', 'G5', 'D3'], null, [{ k: 'steal', dur: 3 }], 0x1ac46a, 3],
   ['carmenLucia', 'Rainha dos Dragões', 6, 1, 500, ['redCoral', 'E6', 'Q6'], ['E1', 'E2', 'E3', 'E4', 'E5'], [{ k: 'dmgAura', pct: 0.5, radius: 500 }, { k: 'auraAS', value: 200, radius: 200 }, { k: 'auraAS', value: 70, radius: 664 }, { k: 'trueSight' }], 0xff2a7a, 4],
   ['yellowSapphire', 'Dragão da Nevasca', 20, 1, 600, ['B5', 'Y4', 'R4'], null, [{ k: 'iceAura', pct: 0.7, radius: 300 }], 0xfff06a, 2],
   ['saberEye', 'Dragão Glacial do Norte', 60, 1, 500, ['yellowSapphire', 'bloodstone', 'B5'], null, [{ k: 'iceAura', pct: 0.7, radius: 300 }, { k: 'chain', chance: 0.25, dmg: 300, jumps: 10, radius: 800, slow: 120 }], 0x9ae6ff, 3],
@@ -142,5 +142,7 @@ const AB_TEXT = {
   frost: (a) => `Congela área −${Math.round(a.pct * 100)}% vel.`,
   dmgAura: (a) => `Aura +${Math.round(a.pct * 100)}% dano`,
   iceAura: (a) => `Aura de gelo −${Math.round(a.pct * 100)}% vel.`,
+  steal: (a) => `Rouba Evasão e Refração do alvo por ${a.dur}s`,
+  antiDisarm: (a) => `Aura: aliados a ${Math.round(a.radius / CELL)} q não são desarmados`,
 };
 export function abilityText(a) { return AB_TEXT[a.k] ? AB_TEXT[a.k](a) : a.k; }

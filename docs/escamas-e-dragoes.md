@@ -130,10 +130,10 @@ Códigos de escama: letra do elemento + número da qualidade (1 = Partida ... 6 
 | Dragão das Marés | Q5 + E4 + G2 | 30 | 0.6 | 9,4 q | Aura −15 armadura inimiga |
 | Leviatã | Dragão das Marés + Dragão do Pântano + G2 | 130 | 0.6 | 10,9 q | 10% atordoa 2s; Aura −30 armadura inimiga |
 | Leviatã Ancestral | Leviatã + G6 + P6 **ou** G1 + G2 + G3 + G4 + G5 | 42 | 1 | 12,5 q | Veneno 128/s por 5s; Reduz armadura −64; Aura −30 armadura inimiga; Congela área −50% vel. |
-| Dragão Perolado | Q4 + D4 + E2 | 80 | 0.6 | 7,8 q | — |
+| Dragão Perolado | Q4 + D4 + E2 | 80 | 0.6 | 7,8 q | Aura: aliados a 6 q não são desarmados |
 | Dragão Inspirador | E5 + D4 + Q3 | 6 | 1 | 7,8 q | Aura +60% vel. de ataque; Revela invisíveis; Aura +50% dano |
 | Dragão Coral | Dragão Inspirador + Dragão Perolado + E4 | 120 | 0.6 | 7,8 q | Aura +60% vel. de ataque; Revela invisíveis; Aura +50% dano |
-| Dragão Ladrão | Dragão Perolado + G5 + D3 | 80 | 1 | 7,8 q | — |
+| Dragão Ladrão | Dragão Perolado + G5 + D3 | 80 | 1 | 7,8 q | Rouba Evasão e Refração do alvo por 3s |
 | Rainha dos Dragões | Dragão Coral + E6 + Q6 **ou** E1 + E2 + E3 + E4 + E5 | 6 | 1 | 7,8 q | Aura +50% dano; Aura +200% vel. de ataque; Aura +70% vel. de ataque; Revela invisíveis |
 | Dragão da Nevasca | B5 + Y4 + R4 | 20 | 1 | 9,4 q | Aura de gelo −70% vel. |
 | Dragão Glacial do Norte | Dragão da Nevasca + Dragão Trovejante + B5 | 60 | 1 | 7,8 q | Aura de gelo −70% vel.; 25% raio em cadeia (10 saltos) |

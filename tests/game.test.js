@@ -409,3 +409,35 @@ test('quitting mid-wave clears the enemies on the map', () => {
   assert.equal(g.spawnQueue.length, 0);
   assert.equal(g.projectiles.length, 0);
 });
+
+// 2ª auditoria (22/11): poder do Dragão Ladrão e do Dragão Perolado.
+const fakeEnemy = (abs) => ({ uid: 1, type: { air: false, boss: false, armor: 0, mr: 0 }, hp: 1e6, maxHp: 1e6, x: 10 * CELL, y: 10 * CELL, alive: true, ab: new Set(abs),
+  slow: { a: 0, t: 0 }, poison: { dps: 0, t: 0 }, shred: { a: 0, t: 0 }, frost: { p: 0, t: 0 }, stun: 0, rushT: 0, shield: 0, reactive: 0, stolen: 0 });
+
+test('Dragão Ladrão rouba Evasão e Refração por 3 s', () => {
+  const g = new Game({ rng: () => 0.99 }); // never dodges on the thief's own shot
+  const en = fakeEnemy(['evasion', 'refraction']);
+  g.enemies.set(1, en);
+  g.computeAuras();
+  g.hit({ def: TOWERS.zumurud, buffDmg: 0, noMiss: false, color: 0, tower: null }, en);
+  assert.equal(en.stolen, 3);
+  en.shield = 2; // a refraction shield does not block while stolen
+  // with Evasion stolen, a roll that would dodge (0.1 < 0.5) does not dodge
+  g.rng = () => 0.1;
+  const hp = en.hp;
+  g.hit({ def: TOWERS.D1, buffDmg: 0, noMiss: false, color: 0, tower: null }, en);
+  assert.ok(en.hp < hp);
+});
+
+test('Dragão Perolado protege torres próximas do desarme', () => {
+  const g = new Game();
+  g.entities.set(900, { uid: 900, x: 11, y: 11, kind: 'gem', def: TOWERS.deepSeaPearl, pending: false });
+  g.entities.set(901, { uid: 901, x: 13, y: 11, kind: 'gem', def: TOWERS.D1, pending: false });
+  g.entities.set(902, { uid: 902, x: 41, y: 41, kind: 'gem', def: TOWERS.D1, pending: false });
+  const near = fakeEnemy(['disarm']); near.x = 14 * CELL; near.y = 12 * CELL;
+  const far = fakeEnemy(['disarm']); far.uid = 2; far.x = 42 * CELL; far.y = 42 * CELL;
+  g.enemies.set(1, near); g.enemies.set(2, far);
+  g.computeAuras();
+  assert.equal(g.entities.get(901).disarmed, false);
+  assert.equal(g.entities.get(902).disarmed, true);
+});
