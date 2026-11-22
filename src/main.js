@@ -234,7 +234,7 @@ function showRanking() {
 }
 
 function confirmQuit() {
-  if (game.phase === 'over') return;
+  if (game.phase === 'over' || screensOpen()) return;
   $('modal-body').className = 'sheet narrow';
   $('modal-body').innerHTML = `<div class="center-msg"><h2>Sair da partida?</h2>
     <p class="hint">A fase atual conta como seu resultado.</p>
@@ -398,9 +398,13 @@ for (const v of [1, 2, 4]) $('sp' + v).onclick = () => setSpeed(v);
 $('btn-luck').onclick = () => game.upgradeQuality();
 $('btn-recipes').onclick = () => showRecipes();
 $('btn-menu').onclick = confirmQuit;
-$('modal').addEventListener('click', (ev) => { if (ev.target === $('modal') && game.phase !== 'over') $('modal').hidden = true; });
+// The end-of-match sheet only closes through its own buttons; other sheets close by tapping outside or Escape.
+const modalDismissable = () => screensOpen() || game.phase !== 'over';
+$('modal').addEventListener('click', (ev) => { if (ev.target === $('modal') && modalDismissable()) $('modal').hidden = true; });
 window.addEventListener('keydown', (ev) => {
-  if (ev.key === 'Escape') { $('modal').hidden = true; select(null); setAim(null); }
+  if (ev.key === 'Escape' && modalDismissable()) $('modal').hidden = true;
+  if (screensOpen()) return; // menu on top: match controls are off
+  if (ev.key === 'Escape') { select(null); setAim(null); }
   if (ev.key === 'Enter' && aimSpot) confirmPlace();
   if (ev.key === '1') setSpeed(1);
   if (ev.key === '2') setSpeed(2);

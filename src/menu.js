@@ -22,13 +22,19 @@ export function initMenu(callbacks) {
 
 export function screensOpen() { return !$('scr-menu').hidden || !$('scr-levels').hidden; }
 
-export function hideScreens() { $('scr-menu').hidden = true; $('scr-levels').hidden = true; }
+// While a parchment screen is up, the match HUD and dock underneath must not take clicks or keyboard focus.
+function setMatchInert(on) {
+  for (const el of [document.querySelector('.hud'), $('dock'), $('game')]) if (el) el.inert = on;
+}
+
+export function hideScreens() { $('scr-menu').hidden = true; $('scr-levels').hidden = true; setMatchInert(false); }
 
 export function showMenu() {
   const best = bestOverall(store());
   $('m-record').textContent = best ? `Recorde: fase ${best.phase} · ${DIFFICULTIES[best.diffKey]?.name ?? ''}` : '';
   $('scr-levels').hidden = true;
   $('scr-menu').hidden = false;
+  setMatchInert(true);
 }
 
 export function showLevels() {
@@ -41,4 +47,5 @@ export function showLevels() {
   $('banners').querySelectorAll('[data-diff]').forEach((b) => { b.onclick = () => { hideScreens(); cb.onPlay?.(b.dataset.diff); }; });
   $('scr-menu').hidden = true;
   $('scr-levels').hidden = false;
+  setMatchInert(true);
 }
