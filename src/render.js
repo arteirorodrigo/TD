@@ -6,7 +6,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { CELL, tierTag } from './data/towers.js';
-import { AttackFx, ATTACK_STYLE } from './attack-fx.js';
+import { AttackFx } from './attack-fx.js';
 import grassUrl from './assets/mapa_gramado.jpg';
 import dragonModelUrl from './assets/dragoes/dragao-obj.glb?url';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -261,7 +261,7 @@ export class Renderer {
     this.enemyMeshes = new Map();
     this.projMeshes = [];
     this.particles = this.makeParticles();
-    this.attackFx = ATTACK_STYLE ? new AttackFx(this) : null;
+    this.attackFx = new AttackFx(this);
     this.effects = [];
 
     // Selection / range indicators

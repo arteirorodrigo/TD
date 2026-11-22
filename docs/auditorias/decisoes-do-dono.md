@@ -13,3 +13,5 @@ Os auditores leem este arquivo antes de toda auditoria. O que está em "Não gos
 ## Decisões fixas do dono (respeitar sempre)
 - T0–T5 fica nas escamas (Partida/Perfeita se confundiam).
 - O botão "Trocar uma pedra" só aparece depois que a sorte estiver no nível máximo.
+- Chocar um dragão usando só torres antigas encerra a rodada e as 5 pedras novas viram rocha: o dono acha **perfeito assim** (22/11). Não é erro; não propor mudar.
+- Ataque por elemento: só os dragões; escamas ficam com o tiro simples. Estilo escolhido: projéteis com rastro (22/11).
