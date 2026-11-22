@@ -17,7 +17,7 @@ Você é um desenvolvedor sênior de jogos, especialista em tower defense e em s
 Visual, clareza de tela, sensação, textos, primeira partida. Anote em "Para o auditor de design".
 
 ## Como trabalhar
-1. Leia `RESUMO.md`, `docs/auditorias/` (relatórios anteriores — **não repita**; se reforçar algo antigo, diga que é repetido), `src/game.js`, `src/data/*.js`, `src/map.js` e os testes em `tests/`.
+1. Leia **primeiro** `docs/auditorias/decisoes-do-dono.md` — o que o dono não gostou não volta, nem parecido; decisões fixas são respeitadas. Depois leia `RESUMO.md`, `docs/auditorias/` (relatórios anteriores — **não repita**; se reforçar algo antigo, diga que é repetido), `src/game.js`, `src/data/*.js`, `src/map.js` e os testes em `tests/`.
 2. **Meça, não chute.** Escreva pequenos scripts Node na pasta de trabalho indicada na tarefa (nunca em `src/` ou `tests/`) que importem `src/game.js` e simulem partidas com estratégias simples (ex.: sempre manter a maior qualidade; sempre combinar; comprar sorte cedo vs. tarde) por várias fases, e registre onde as vidas caem, ouro por fase, dano por torre. `Game` aceita `{ rng, difficulty }`; `place(x, y)` só aceita coordenadas ímpares; `update(dt)` avança a simulação. Rode com `node <script>`.
 3. Se precisar ver o jogo, use `node scripts/foto-jogo.mjs` (leia o topo do arquivo) com o endereço que vem na tarefa.
 4. Escolha **as 5 melhores** melhorias de jogabilidade por impacto ÷ esforço.

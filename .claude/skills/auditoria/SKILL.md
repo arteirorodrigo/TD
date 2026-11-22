@@ -10,7 +10,8 @@ O dono não é programador: tudo que chega a ele é em português simples, curto
 ## 1. Preparar
 - Data de hoje = `AAAA-MM-DD`. Pasta de trabalho: `.auditoria-trabalho/AAAA-MM-DD/` (fica fora do histórico de versões; criar se não existir). Fotos, scripts e rascunhos vão lá.
 - Jogo rodando: se `curl -s localhost:5173` responder, use `http://localhost:5173/`. Senão, inicie `npx vite --port 5199` em segundo plano e use `http://localhost:5199/`.
-- Liste `docs/auditorias/` para saber o que já foi proposto.
+- Liste `docs/auditorias/` para saber o que já foi proposto, e leia `docs/auditorias/decisoes-do-dono.md`.
+- Ao fim, depois que o dono escolher o que fazer, atualize `decisoes-do-dono.md`: o que ele recusar vai para "Não gostou"; o que ele aprovar vai para "Aprovadas".
 
 ## 2. Rodada 1 — cada um no seu canto (em paralelo)
 Chame os dois agentes **na mesma mensagem**: `auditor-game-design` e `auditor-game-dev`. Se o tipo não estiver disponível nesta sessão (agentes criados depois do início da sessão só aparecem na próxima), use `general-purpose` e comece o pedido com "Leia `.claude/agents/<nome>.md` e siga exatamente esse papel."
