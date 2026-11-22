@@ -47,6 +47,7 @@ export class Game {
     this.lives = this.maxLives;
     this.gold = 0;
     this.qualityLevel = 0;
+    this.rerolls = 0; // stones swapped this round (price doubles each time)
     this.phase = editor ? 'edit' : 'build'; // build | choose | wave | over | edit (maze editor)
     this.entities = new Map(); // uid -> {uid,x,y,kind:'gem'|'rock',def,pending,cooldown}
     this.enemies = new Map();
@@ -103,6 +104,24 @@ export class Game {
     if (this.pending.length === STONES_PER_ROUND) this.phase = 'choose';
     this.emit('change');
     return e;
+  }
+
+  // Swap a pending stone for a new random scale. Only once luck is maxed; 50, 100, 200… gold per round.
+  rerollCost() {
+    if (this.phase !== 'choose' || this.qualityLevel < QUALITY_ODDS.length - 1) return null;
+    return 50 * 2 ** this.rerolls;
+  }
+
+  reroll(uid) {
+    const cost = this.rerollCost();
+    const e = this.entities.get(uid);
+    if (cost === null || !e?.pending || this.gold < cost) return false;
+    this.gold -= cost;
+    this.rerolls++;
+    e.def = TOWERS[this.rollGem()];
+    this.fx.push({ t: 'place', x: e.x, y: e.y, color: e.def.color });
+    this.emit('change');
+    return true;
   }
 
   // ---------- Maze editor ----------
@@ -248,6 +267,7 @@ export class Game {
       if (e && e.kind === 'gem' && !e.pending) { e.kind = 'rock'; e.def = null; }
     }
     this.pending = [];
+    this.rerolls = 0;
     this.fx.push({ t: 'upgrade', x: keep.x, y: keep.y, color: keep.def.color });
     if (!keep.def.base) this.emit('hatch', keep.def.id);
     this.startWave();

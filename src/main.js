@@ -264,6 +264,8 @@ function renderSelection() {
     const ci = game.combineInfo(e.uid);
     if (ci) actions.push(`<button class="btn" data-act="combine">Combinar ${ci.steps === 2 ? '4' : '2'} iguais → ${TOWERS[ci.result].name}</button>`);
     for (const o of game.specialOptions(e.uid)) actions.push(`<button class="btn special" data-act="special" data-id="${o.result}">Chocar ${TOWERS[o.result].name}</button>`);
+    const rc = e.pending ? game.rerollCost() : null;
+    if (rc !== null) actions.push(`<button class="btn" data-act="reroll" ${game.gold < rc ? 'disabled' : ''}>Trocar esta pedra (${rc} ouro)</button>`);
   }
   if (actions.length) html += `<div class="actions">${actions.join('')}</div>`;
   else if (game.phase === 'choose' && !e.pending) html += '<p class="hint">Selecione uma das escamas novas para decidir a rodada.</p>';
@@ -274,6 +276,7 @@ function renderSelection() {
     if (act === 'keep') game.keep(e.uid);
     if (act === 'combine') game.combine(e.uid);
     if (act === 'special') game.special(e.uid, b.dataset.id);
+    if (act === 'reroll') game.reroll(e.uid);
     renderUI();
   });
 }
@@ -558,4 +561,5 @@ showMenu();
 window.__game = () => game; // handy for debugging in the console
 window.__view = () => view;
 window.__towers = TOWERS;
+window.__select = (uid) => select(uid);
 requestAnimationFrame(loop);

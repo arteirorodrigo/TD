@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Game, DIFFICULTIES } from '../src/game.js';
+import { Game, DIFFICULTIES, QUALITY_ODDS } from '../src/game.js';
 import { Grid } from '../src/map.js';
 import { waveFor, bountyFor, baseLevelOf, ENEMY_TYPES } from '../src/data/enemies.js';
 import { getRecords, submitRecord, bestOverall, getMazes, saveMaze, deleteMaze } from '../src/records.js';
@@ -296,4 +296,52 @@ test('a new stone can be placed over an old rock, replacing it', () => {
   assert.equal(g.entities.has(rock.uid), false);
   assert.equal(g.entityAt(43, 21).uid, e.uid);
   assert.equal(g.canPlace(41, 21), false); // the kept scale (a tower) is never replaced
+});
+
+function chooseGame() {
+  let n = 0;
+  const g = new Game({ rng: () => ((n++ * 0.37) % 1) });
+  for (const [x, y] of [[41, 21], [43, 21], [45, 21], [47, 21], [49, 21]]) g.place(x, y, 'D1');
+  return g;
+}
+
+test('reroll needs max luck and the choose phase', () => {
+  const g = chooseGame();
+  g.gold = 1000;
+  assert.equal(g.rerollCost(), null);
+  assert.equal(g.reroll(g.pending[0]), false);
+  g.qualityLevel = QUALITY_ODDS.length - 1;
+  assert.equal(g.rerollCost(), 50);
+  const b = new Game(); b.qualityLevel = QUALITY_ODDS.length - 1; b.gold = 1000;
+  assert.equal(b.rerollCost(), null); // build phase
+});
+
+test('reroll costs 50, 100, 200 in the same round and changes the scale', () => {
+  const g = chooseGame();
+  g.qualityLevel = QUALITY_ODDS.length - 1;
+  g.gold = 350;
+  const uid = g.pending[0];
+  const seen = new Set();
+  for (const cost of [50, 100, 200]) {
+    assert.equal(g.rerollCost(), cost);
+    const before = g.gold;
+    assert.ok(g.reroll(uid));
+    assert.equal(g.gold, before - cost);
+    seen.add(g.entities.get(uid).def.id);
+  }
+  assert.ok(seen.size > 1 || !seen.has('D1'));
+  assert.equal(g.gold, 0);
+  assert.equal(g.reroll(uid), false); // no gold for 400
+  assert.equal(g.reroll(9999), false); // not a pending stone
+});
+
+test('reroll price resets next round', () => {
+  const g = chooseGame();
+  g.qualityLevel = QUALITY_ODDS.length - 1;
+  g.gold = 1000;
+  g.reroll(g.pending[0]); g.reroll(g.pending[0]);
+  assert.equal(g.rerollCost(), 200);
+  g.keep(g.pending[1]);
+  g.phase = 'choose';
+  assert.equal(g.rerollCost(), 50);
 });
