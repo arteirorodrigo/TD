@@ -367,14 +367,16 @@ export class Game {
     const enemies = [...this.enemies.values()];
     for (const t of this.towers()) {
       t.cooldown -= dt;
+      if (!enemies.length) t.aim = null;
       if (t.def.dmg <= 0 || t.disarmed || t.cooldown > 0 || !enemies.length) continue;
       const tx = toWorld(t.x), ty = toWorld(t.y);
       const range = t.def.range + t.buffRange;
       const inRange = enemies.filter((e) => e.alive && Math.hypot(e.x - tx, e.y - ty) <= range && this.visible(e))
         .sort((a, b) => b.progress - a.progress);
-      if (!inRange.length) continue;
+      if (!inRange.length) { t.aim = null; continue; }
       const multi = t.def.abilities.find((a) => a.k === 'multi');
       const targets = inRange.slice(0, multi ? multi.count : 1);
+      t.aim = { x: targets[0].x, y: targets[0].y };
       const selfAS = t.def.abilities.filter((a) => a.k === 'selfAS').reduce((s, a) => s + a.value, 0);
       let interval = (t.def.rate * 100) / (100 + selfAS + t.buffAS);
       if (targets[0].ab.has('untouchable')) interval *= 1.5;

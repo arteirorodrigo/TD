@@ -28,7 +28,7 @@ function start() {
 function phaseText() {
   const p = game.phase;
   if (p === 'build') return `Coloque ${STONES_PER_ROUND - game.pending.length} pedra${STONES_PER_ROUND - game.pending.length === 1 ? '' : 's'} no mapa`;
-  if (p === 'choose') return 'Escolha uma gema para manter, combinar ou criar especial';
+  if (p === 'choose') return 'Escolha uma escama para manter, combinar ou chocar um dragão';
   if (p === 'wave') return `Onda ${game.level} em andamento`;
   if (p === 'over') return 'Fim de jogo';
   return 'Vitória!';
@@ -102,7 +102,7 @@ function renderSelection() {
   view.showSelection(e);
   if (e.kind === 'rock') {
     const can = game.phase === 'build' || game.phase === 'choose';
-    card.innerHTML = `<h2>Pedra</h2><p class="hint">Bloqueia o caminho como as gemas, mas não ataca.</p>
+    card.innerHTML = `<h2>Pedra</h2><p class="hint">Bloqueia o caminho como as escamas, mas não ataca.</p>
       <div class="actions"><button class="btn" id="act-remove" ${can ? '' : 'disabled'}>Remover pedra</button></div>
       ${can ? '' : '<p class="hint">Só dá para remover entre as ondas.</p>'}`;
     $('act-remove').onclick = () => { game.removeRock(e.uid); select(null); };
@@ -111,18 +111,18 @@ function renderSelection() {
   const def = e.def;
   let html = `<h2><span class="swatch" style="color:${hex(def.color)};background:${hex(def.color)}"></span>${def.name}</h2>`;
   if (e.pending) html += '<span class="tag">Nova nesta rodada</span>';
-  else if (!def.base) html += '<span class="tag boss">Especial</span>';
+  else if (!def.base) html += '<span class="tag boss">Dragão</span>';
   html += towerStats(def, e);
   const actions = [];
   if (game.phase === 'choose') {
-    if (e.pending) actions.push(`<button class="btn primary" data-act="keep">Manter esta gema</button>`);
+    if (e.pending) actions.push(`<button class="btn primary" data-act="keep">Manter esta escama</button>`);
     const ci = game.combineInfo(e.uid);
     if (ci) actions.push(`<button class="btn" data-act="combine">Combinar ${ci.steps === 2 ? '4' : '2'} iguais → ${TOWERS[ci.result].name}</button>`);
-    for (const o of game.specialOptions(e.uid)) actions.push(`<button class="btn special" data-act="special" data-id="${o.result}">Criar ${TOWERS[o.result].name}</button>`);
+    for (const o of game.specialOptions(e.uid)) actions.push(`<button class="btn special" data-act="special" data-id="${o.result}">Chocar ${TOWERS[o.result].name}</button>`);
   }
   if (actions.length) html += `<div class="actions">${actions.join('')}</div>`;
-  else if (game.phase === 'choose' && !e.pending) html += '<p class="hint">Selecione uma das pedras novas para decidir a rodada.</p>';
-  if (e.pending && game.phase === 'build') html += '<p class="hint">Coloque todas as pedras para decidir qual manter.</p>';
+  else if (game.phase === 'choose' && !e.pending) html += '<p class="hint">Selecione uma das escamas novas para decidir a rodada.</p>';
+  if (e.pending && game.phase === 'build') html += '<p class="hint">Coloque todas as pedras para decidir qual escama manter.</p>';
   card.innerHTML = html;
   card.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => {
     const act = b.dataset.act;
@@ -147,17 +147,17 @@ function showRecipes() {
       ${recipes.map((r, i) => `<div>${i ? '<span class="muted" style="font-size:12px">ou </span>' : ''}${r.map((id) => `<span class="ing ${have.get(id) ? 'have' : ''}">${TOWERS[id].name}</span>`).join('')}</div>`).join('')}
       <div class="muted" style="font-size:12px;margin-top:4px">${t.abilities.map(abilityText).join(' · ')}</div></div>`;
   };
-  $('modal-body').innerHTML = `<div class="row" style="justify-content:space-between;align-items:center"><h2>Receitas especiais</h2><button class="btn" id="close-modal">Fechar</button></div>
-    <p class="hint">Na fase de escolha, selecione uma gema que faz parte da receita. Ingredientes em verde já estão no mapa.</p>
+  $('modal-body').innerHTML = `<div class="row" style="justify-content:space-between;align-items:center"><h2>Dragões</h2><button class="btn" id="close-modal">Fechar</button></div>
+    <p class="hint">Cada dragão nasce de uma combinação de escamas. Na fase de escolha, selecione uma escama da receita para chocar o dragão. Ingredientes em verde já estão no mapa.</p>
     <div class="recipes">${specials.map(card).join('')}</div>`;
   $('modal').hidden = false;
   $('close-modal').onclick = () => ($('modal').hidden = true);
 }
 
 function showEnd(won) {
-  $('modal-body').innerHTML = `<div class="center-msg"><div class="muted">${won ? 'Todas as 50 ondas vencidas' : 'Suas vidas acabaram'}</div>
+  $('modal-body').innerHTML = `<div class="center-msg"><div class="muted">${won ? 'Os caçadores foram derrotados' : 'Suas vidas acabaram'}</div>
     <div class="big">${won ? 'Vitória!' : `Nível ${game.level}`}</div>
-    <p class="hint">${game.kills} inimigos derrotados · ${game.towers().length} torres</p>
+    <p class="hint">${game.kills} inimigos derrotados · ${game.towers().length} defensores</p>
     <button class="btn primary" id="restart">Jogar de novo</button></div>`;
   $('modal').hidden = false;
   $('restart').onclick = () => { $('modal').hidden = true; start(); };
@@ -184,8 +184,7 @@ function updateFloaters(dt) {
 }
 
 // ---------- Input ----------
-const pointers = new Map();
-let drag = null, pinch = null;
+let drag = null;
 const canvas = $('game');
 
 function tlFromPoint(cx, cy) {
@@ -194,39 +193,15 @@ function tlFromPoint(cx, cy) {
   return { x: Math.round(p.x) - 1, y: Math.round(p.y) - 1, fx: p.x, fy: p.y };
 }
 
+// The board is fixed: the camera always frames the whole map, so there is no pan or zoom.
 canvas.addEventListener('pointerdown', (ev) => {
-  canvas.setPointerCapture(ev.pointerId);
-  pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
-  if (pointers.size === 2) {
-    const [a, b] = [...pointers.values()];
-    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), dist: view.view.dist };
-    drag = null;
-  } else {
-    drag = { x: ev.clientX, y: ev.clientY, moved: false, target: view.view.target.clone(), button: ev.button };
-  }
+  drag = { x: ev.clientX, y: ev.clientY, id: ev.pointerId, button: ev.button };
 });
 canvas.addEventListener('pointermove', (ev) => {
-  if (pointers.has(ev.pointerId)) pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
-  if (pinch && pointers.size === 2) {
-    const [a, b] = [...pointers.values()];
-    const want = pinch.dist * pinch.d / Math.max(10, Math.hypot(a.x - b.x, a.y - b.y));
-    zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, want / view.view.dist);
-    return;
-  }
-  if (drag && pointers.has(ev.pointerId)) {
-    const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
-    if (Math.hypot(dx, dy) > 6) drag.moved = true;
-    if (drag.moved) {
-      const k = view.view.dist / canvas.clientHeight * 0.9;
-      view.view.target.x = drag.target.x - dx * k;
-      view.view.target.z = drag.target.z - dy * k / Math.sin(view.view.pitch);
-      view.setHover(null);
-      return;
-    }
-  }
   if (ev.pointerType === 'mouse') updateHover(ev.clientX, ev.clientY);
 });
 function updateHover(cx, cy) {
+  if (aimSpot) return; // keep the chosen spot highlighted until confirmed or cancelled
   if (game.phase !== 'build') { view.setHover(null); canvas.style.cursor = 'default'; return; }
   const tl = tlFromPoint(cx, cy);
   if (!tl || tl.x < 0 || tl.y < 0 || tl.x > game.grid.w - 2 || tl.y > game.grid.h - 2) { canvas.style.cursor = 'default'; return view.setHover(null); }
@@ -235,46 +210,55 @@ function updateHover(cx, cy) {
   canvas.style.cursor = 'crosshair';
   view.setHover(tl, game.canPlace(tl.x, tl.y));
 }
-const endPointer = (ev) => {
-  const wasPinch = !!pinch;
-  pointers.delete(ev.pointerId);
-  if (pointers.size < 2) pinch = null;
-  if (wasPinch) { drag = null; return; }
-  if (drag && !drag.moved && drag.button === 0) onTap(ev.clientX, ev.clientY);
+canvas.addEventListener('pointerup', (ev) => {
+  if (drag && drag.id === ev.pointerId && drag.button === 0 && Math.hypot(ev.clientX - drag.x, ev.clientY - drag.y) < 14) onTap(ev.clientX, ev.clientY);
   drag = null;
-};
-canvas.addEventListener('pointerup', endPointer);
-canvas.addEventListener('pointercancel', (ev) => { pointers.delete(ev.pointerId); pinch = null; drag = null; });
+});
+canvas.addEventListener('pointercancel', () => { drag = null; });
 canvas.addEventListener('pointerleave', () => view.setHover(null));
-canvas.addEventListener('wheel', (ev) => {
-  ev.preventDefault();
-  zoomAt(ev.clientX, ev.clientY, Math.exp(ev.deltaY * 0.0012));
-}, { passive: false });
-// Zoom keeping the point under the cursor in place.
-function zoomAt(cx, cy, factor) {
-  const v = view.view;
-  const before = view.pick(cx, cy);
-  const old = v.dist;
-  v.dist = Math.min(v.maxDist, Math.max(v.minDist, v.dist * factor));
-  if (!before) return;
-  const k = 1 - v.dist / old;
-  v.target.x += (before.x - v.target.x) * k;
-  v.target.z += (before.y - v.target.z) * k;
-}
+canvas.addEventListener('wheel', (ev) => ev.preventDefault(), { passive: false });
 canvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 
+// Placing is two steps: tap marks the spot (preview), then confirm (button, Enter, or tapping the same spot).
+let aimSpot = null;
+function setAim(tl) {
+  aimSpot = tl;
+  view.setGhost(tl);
+  $('confirm').hidden = !tl;
+  if (tl) view.setHover(tl, true); else view.setHover(null);
+}
+function confirmPlace() {
+  if (!aimSpot) return;
+  const { x, y } = aimSpot;
+  setAim(null);
+  if (!game.canPlace(x, y)) return;
+  const e = game.place(x, y);
+  if (game.phase === 'choose') select(e.uid);
+  else select(null);
+}
 function onTap(cx, cy) {
   const tl = tlFromPoint(cx, cy);
   if (!tl) return;
   const ent = game.entityAt(Math.floor(tl.fx), Math.floor(tl.fy));
-  if (ent) { select(ent.uid === selectedUid ? null : ent.uid); return; }
-  if (game.phase === 'build' && game.canPlace(tl.x, tl.y)) {
-    const e = game.place(tl.x, tl.y);
-    if (game.phase === 'choose') select(e.uid);
-    else select(null);
+  if (ent) { setAim(null); select(ent.uid === selectedUid ? null : ent.uid); return; }
+  if (game.phase === 'build') {
+    if (aimSpot && Math.abs(aimSpot.x - tl.x) <= 1 && Math.abs(aimSpot.y - tl.y) <= 1) { confirmPlace(); return; }
+    if (game.canPlace(tl.x, tl.y)) { select(null); setAim({ x: tl.x, y: tl.y }); return; }
+    setAim(null);
+    const inMap = tl.x >= 0 && tl.y >= 0 && tl.x <= game.grid.w - 2 && tl.y <= game.grid.h - 2;
+    if (inMap) floatText((tl.x + 1) * CELL, (tl.y + 1) * CELL, game.grid.canBuildAt(tl.x, tl.y) ? 'Fecha o caminho' : 'Não dá para colocar aqui', 'leak');
     return;
   }
   select(null);
+}
+$('confirm-ok').onclick = confirmPlace;
+$('confirm-cancel').onclick = () => setAim(null);
+function updateConfirm() {
+  if (!aimSpot) return;
+  if (game.phase !== 'build') { setAim(null); return; }
+  const p = view.project(aimSpot.x + 1, aimSpot.y + 1, 0);
+  const el = $('confirm');
+  el.style.left = p.x + 'px'; el.style.top = p.y + 'px';
 }
 
 function setSpeed(s) {
@@ -286,7 +270,8 @@ $('btn-luck').onclick = () => game.upgradeQuality();
 $('btn-recipes').onclick = showRecipes;
 $('modal').addEventListener('click', (ev) => { if (ev.target === $('modal') && game.phase !== 'over' && game.phase !== 'won') $('modal').hidden = true; });
 window.addEventListener('keydown', (ev) => {
-  if (ev.key === 'Escape') { $('modal').hidden = true; select(null); }
+  if (ev.key === 'Escape') { $('modal').hidden = true; select(null); setAim(null); }
+  if (ev.key === 'Enter' && aimSpot) confirmPlace();
   if (ev.key === '1') setSpeed(1);
   if (ev.key === '2') setSpeed(2);
   if (ev.key === '4') setSpeed(4);
@@ -303,6 +288,7 @@ function loop(now) {
   view.drainFx(floatText);
   view.frame(dt);
   updateFloaters(dt);
+  updateConfirm();
   uiTimer += dt;
   if (uiTimer > 0.5 && selectedUid && game.phase === 'wave') { uiTimer = 0; renderSelection(); }
   requestAnimationFrame(loop);
@@ -310,4 +296,5 @@ function loop(now) {
 
 start();
 window.__game = () => game; // handy for debugging in the console
+window.__view = () => view;
 requestAnimationFrame(loop);

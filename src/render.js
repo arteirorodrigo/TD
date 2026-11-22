@@ -5,43 +5,88 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { CELL } from './data/towers.js';
 import { PLATFORM, BLOCK } from './map.js';
 
 const U = (v) => v / CELL; // game units -> squares
 
-// ---------- Gem geometry per type ----------
-function gemGeometry(type) {
-  const g = (geo) => { if (geo.index) geo = geo.toNonIndexed(); geo.computeVertexNormals(); return geo; };
-  switch (type) {
-    case 'B': { const o = new THREE.OctahedronGeometry(0.55); o.scale(0.85, 1.35, 0.85); return g(o); }
-    case 'D': {
-      const crown = new THREE.CylinderGeometry(0.32, 0.6, 0.28, 8); crown.translate(0, 0.14, 0);
-      const pav = new THREE.ConeGeometry(0.6, 0.62, 8); pav.rotateX(Math.PI); pav.translate(0, -0.31, 0);
-      return g(mergeGeometries([crown.toNonIndexed(), pav.toNonIndexed()]));
-    }
-    case 'E': { const s = new THREE.IcosahedronGeometry(0.55, 1); s.scale(1, 0.62, 0.8); return g(s); }
-    case 'G': { const c = new THREE.CylinderGeometry(0.42, 0.5, 0.95, 4, 1); c.rotateY(Math.PI / 4); c.scale(0.8, 1, 1.1); return g(c); }
-    case 'P': {
-      const parts = [];
-      for (const [x, z, h, r] of [[0, 0, 1.0, 0], [0.28, 0.1, 0.7, 0.35], [-0.25, 0.15, 0.6, -0.4]]) {
-        const body = new THREE.CylinderGeometry(0.17, 0.17, h, 6); body.translate(0, h / 2 - 0.4, 0);
-        const tip = new THREE.ConeGeometry(0.17, 0.25, 6); tip.translate(0, h - 0.4 + 0.125, 0);
-        const m = mergeGeometries([body.toNonIndexed(), tip.toNonIndexed()]);
-        m.rotateZ(r); m.translate(x, 0, z); parts.push(m);
-      }
-      return g(mergeGeometries(parts));
-    }
-    case 'Q': {
-      const body = new THREE.CylinderGeometry(0.24, 0.24, 1.1, 6); body.translate(0, -0.05, 0);
-      const tip = new THREE.ConeGeometry(0.24, 0.35, 6); tip.translate(0, 0.675, 0);
-      return g(mergeGeometries([body.toNonIndexed(), tip.toNonIndexed()]));
-    }
-    case 'R': return g(new THREE.IcosahedronGeometry(0.55, 0));
-    case 'Y': { const d = new THREE.DodecahedronGeometry(0.52, 0); d.scale(1, 1.15, 1); return g(d); }
-    default: return g(new THREE.IcosahedronGeometry(0.6, 1));
+// Visual identity of each enemy race.
+const RACES = {
+  human: { color: 0x5b7fc4, skin: 0xe6bf98, trim: 0x9aa6b8, size: 1, shield: true },
+  elf: { color: 0x3e9f68, skin: 0xf2dcc0, trim: 0xc9b46a, size: 0.92, ears: true },
+  dwarf: { color: 0x9a5a2e, skin: 0xe0b08a, trim: 0x8c8f96, size: 0.95, wide: 1.3, beard: 0xb35a2a, shield: true, metal: 0.4 },
+  goblin: { color: 0x6c8a3a, skin: 0x8cc04a, trim: 0x5a4632, size: 0.78, ears: true },
+  orc: { color: 0x5a3e2a, skin: 0x5f8f3a, trim: 0x2f3036, size: 1.2, wide: 1.2, tusks: true },
+  troll: { color: 0x3f6a78, skin: 0x7fb0b8, trim: 0x4a3a2a, size: 1.35, wide: 1.2, tusks: true },
+  ogre: { color: 0x8a5a3a, skin: 0xc0906a, trim: 0x4a3a2a, size: 1.55, wide: 1.4, tusks: true },
+  giant: { color: 0x6f7682, skin: 0xa0a6b0, trim: 0x50555e, size: 1.8, wide: 1.3 },
+  undead: { color: 0xb8c4ff, skin: 0xdfe6ff, trim: 0x5a5f7a, size: 1, ghost: true, glow: 0.35 },
+  bat: { color: 0x3a2f45, wing: 0x2a2233, skin: 0x3a2f45, size: 0.9, kind: 'beast' },
+  harpy: { color: 0x9a6a4a, wing: 0x7a4f35, skin: 0xe0b896, size: 1, kind: 'beast' },
+  griffin: { color: 0xc8a050, wing: 0xe8dcc0, skin: 0xe6bf98, trim: 0xf0c040, size: 1.1, kind: 'griffin' },
+  airship: { color: 0xb0563a, skin: 0xe6bf98, trim: 0x6a4a2a, size: 1.2, kind: 'airship' },
+  spirit: { color: 0x9fe8ff, skin: 0xffffff, size: 0.9, kind: 'spirit', ghost: true, glow: 0.5 },
+  witch: { color: 0x5a2f7a, skin: 0xb8e0a0, trim: 0x2a1a35, size: 1, kind: 'witch' },
+};
+
+// ---------- Dragon scales ----------
+// One scale: a pointed, slightly curved plate lying almost flat, tip pointing outward (+x).
+function scaleGeometry() {
+  const sh = new THREE.Shape();
+  sh.moveTo(-0.45, 0);
+  sh.quadraticCurveTo(-0.42, 0.34, 0, 0.36);
+  sh.quadraticCurveTo(0.42, 0.3, 0.62, 0);
+  sh.quadraticCurveTo(0.42, -0.3, 0, -0.36);
+  sh.quadraticCurveTo(-0.42, -0.34, -0.45, 0);
+  const g = new THREE.ExtrudeGeometry(sh, { depth: 0.05, bevelEnabled: true, bevelThickness: 0.04, bevelSize: 0.04, bevelSegments: 2, curveSegments: 10 });
+  const pos = g.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i);
+    pos.setZ(i, pos.getZ(i) + 0.35 * y * y - 0.12 * (x + 0.45)); // curve across, dip toward the tip
   }
+  g.rotateX(-Math.PI / 2);
+  g.computeVertexNormals();
+  return g;
+}
+
+// Small dragon built from primitives; reads well from above (wings spread).
+function buildDragon(color, tier) {
+  const c = new THREE.Color(color);
+  const bodyMat = new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.35, metalness: 0.3, clearcoat: 0.8, iridescence: 0.4, emissive: c, emissiveIntensity: 0.12, flatShading: true });
+  const wingMat = new THREE.MeshPhysicalMaterial({ color: c.clone().multiplyScalar(0.7), roughness: 0.5, metalness: 0.1, side: THREE.DoubleSide, transparent: true, opacity: 0.88, emissive: c, emissiveIntensity: 0.08 });
+  const hornMat = new THREE.MeshStandardMaterial({ color: 0xf2e6cf, roughness: 0.5 });
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xfff3a0 });
+  const boneMat = new THREE.MeshStandardMaterial({ color: c.clone().multiplyScalar(0.45), roughness: 0.6 });
+  const d = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 8), bodyMat); body.scale.set(0.95, 0.75, 1.5);
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.2, 0.55, 6), bodyMat); neck.rotation.x = Math.PI / 2.6; neck.position.set(0, 0.2, 0.72);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.55, 6), bodyMat); head.rotation.x = Math.PI / 2; head.position.set(0, 0.32, 1.12);
+  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.19, 8, 6), bodyMat); skull.position.set(0, 0.34, 0.92);
+  for (const sx of [-1, 1]) {
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.3, 5), hornMat); horn.position.set(0.11 * sx, 0.48, 0.82); horn.rotation.set(-1.1, 0, 0.3 * sx); d.add(horn);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 4), eyeMat); eye.position.set(0.12 * sx, 0.4, 1.0); d.add(eye);
+  }
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.18, 1.3, 6), bodyMat); tail.rotation.x = -Math.PI / 2; tail.position.set(0, 0, -1.15);
+  const tailTip = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.25, 3), hornMat); tailTip.rotation.x = -Math.PI / 2; tailTip.position.set(0, 0, -1.85);
+  d.add(body, neck, head, skull, tail, tailTip);
+  // Wings: membrane shape hinged at the shoulder
+  const ws = new THREE.Shape();
+  ws.moveTo(0, 0.25); ws.lineTo(0.7, 0.55); ws.lineTo(1.55, 0.35); ws.quadraticCurveTo(1.2, 0.05, 1.35, -0.35);
+  ws.quadraticCurveTo(0.95, -0.2, 0.85, -0.6); ws.quadraticCurveTo(0.5, -0.35, 0.2, -0.55); ws.lineTo(0, -0.3);
+  const wg = new THREE.ShapeGeometry(ws, 8); wg.rotateX(Math.PI / 2); // leading edge forward (+z)
+  const wings = [];
+  for (const sx of [1, -1]) {
+    const pivot = new THREE.Group(); pivot.position.set(0.25 * sx, 0.18, 0.15);
+    const w = new THREE.Mesh(wg, wingMat); w.scale.x = sx; w.castShadow = true;
+    const bone = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 1.6, 4), boneMat); bone.rotation.z = Math.PI / 2; bone.rotation.y = 0.2 * sx; bone.position.set(0.78 * sx, 0.01, 0.42);
+    pivot.add(w, bone); d.add(pivot); wings.push({ pivot, sx });
+  }
+  if (tier >= 4) { // ancient dragons get a crown of spines
+    for (let i = 0; i < 5; i++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.3, 4), hornMat); sp.position.set(0, 0.4, 0.4 - i * 0.28); sp.rotation.x = -0.4; d.add(sp); }
+  }
+  d.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  d.scale.setScalar(1.05 + tier * 0.15);
+  return { group: d, wings, mats: [bodyMat, wingMat] };
 }
 
 function rockGeometry(seed) {
@@ -65,7 +110,7 @@ function labelTexture(text, color = '#e9f1ff') {
   c.width = c.height = 128;
   const x = c.getContext('2d');
   x.fillStyle = color;
-  x.font = '700 78px Oxanium, system-ui, sans-serif';
+  x.font = '700 78px Cinzel, Georgia, serif';
   x.textAlign = 'center'; x.textBaseline = 'middle';
   x.shadowColor = 'rgba(0,0,0,.6)'; x.shadowBlur = 8;
   x.fillText(text, 64, 70);
@@ -86,24 +131,24 @@ void main(){
   vec4 c = texture2D(uCells, (cell + .5) / uSize);
   float path = c.r, plat = c.g, block = c.b;
   float inside = step(0., p.x) * step(0., p.y) * step(p.x, uSize.x) * step(p.y, uSize.y);
-  vec3 base = mix(vec3(.075,.09,.12), vec3(.11,.13,.17), smoothstep(45., 0., length(p - uSize*.5)));
+  vec3 base = mix(vec3(.15,.125,.11), vec3(.21,.18,.155), smoothstep(45., 0., length(p - uSize*.5)));
   float fine = gridLine(p, 1.0) * .06;
   float major = gridLine(p / 2., 1.0) * .12;
-  vec3 col = base + vec3(.30,.42,.6) * (fine + major);
+  vec3 col = base + vec3(.55,.42,.30) * (fine + major);
   // path glow with a slow flowing pulse
   float flow = .55 + .45 * sin((p.x + p.y) * .35 - uTime * 2.2);
-  col = mix(col, vec3(.12,.32,.40) * (.85 + .3 * flow), path * .65);
-  col = mix(col, vec3(.10,.26,.19), plat * .85);
-  col += vec3(.2,.9,.6) * plat * gridLine(p, 1.2) * .2;
+  col = mix(col, vec3(.55,.26,.10) * (.85 + .3 * flow), path * .7);
+  col = mix(col, vec3(.42,.31,.14), plat * .85);
+  col += vec3(1.,.75,.3) * plat * gridLine(p, 1.2) * .2;
   // hover footprint
   if (uHover.w > 0. && p.x >= uHover.x && p.x < uHover.x + 2. && p.y >= uHover.y && p.y < uHover.y + 2.) {
     col = mix(col, uHoverColor, .45);
   }
-  col = mix(vec3(.045,.055,.075), col, inside);
+  col = mix(vec3(.05,.045,.045), col, inside);
   // border
   vec2 d = min(p, uSize - p);
   float edge = (1. - smoothstep(0., .15, min(d.x, d.y))) * inside;
-  col += vec3(.2,.5,.8) * edge * .6;
+  col += vec3(.9,.55,.2) * edge * .6;
   // colours above are authored in sRGB; the composer works in linear space
   gl_FragColor = vec4(pow(col, vec3(2.2)), 1.);
 }`;
@@ -120,7 +165,7 @@ export class Renderer {
     r.shadowMap.type = THREE.PCFSoftShadowMap;
 
     const scene = this.scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0d13);
+    scene.background = new THREE.Color(0x0b0908);
     const pmrem = new THREE.PMREMGenerator(r);
     scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environmentIntensity = 0.55;
@@ -164,7 +209,7 @@ export class Renderer {
     this.buildWaypoints();
 
     // Shared resources
-    this.gemGeos = {};
+    this.scaleGeo = scaleGeometry();
     this.rockGeos = Array.from({ length: 6 }, (_, i) => rockGeometry(i + 1));
     this.rockMat = new THREE.MeshStandardMaterial({ color: 0x4a4f58, roughness: 0.92, metalness: 0.05, flatShading: true });
     this.pedestalGeo = new THREE.CylinderGeometry(0.85, 0.95, 0.22, 6);
@@ -187,7 +232,7 @@ export class Renderer {
 
     // Path preview line (air route)
     const air = game.grid.airPath().map((p) => new THREE.Vector3(p.x + 1, 3.2, p.y + 1));
-    const airLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(air), new THREE.LineDashedMaterial({ color: 0x8a7dff, dashSize: 0.6, gapSize: 0.6, transparent: true, opacity: 0.25 }));
+    const airLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(air), new THREE.LineDashedMaterial({ color: 0xc8a0ff, dashSize: 0.6, gapSize: 0.6, transparent: true, opacity: 0.25 }));
     airLine.computeLineDistances();
     scene.add(airLine);
 
@@ -210,14 +255,14 @@ export class Renderer {
     const n = g.waypoints.length;
     g.waypoints.forEach((p, i) => {
       const isEnd = i === 0 || i === n - 1;
-      const color = isEnd ? 0xff5a6a : 0x3cffa0;
+      const color = isEnd ? 0xff4a3a : 0xffc24a;
       const grp = new THREE.Group();
       grp.position.set(p.x + 1, 0, p.y + 1);
       const ring = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.07, 8, 48), new THREE.MeshBasicMaterial({ color }));
       ring.rotation.x = Math.PI / 2; ring.position.y = 0.08;
       const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 4, 24, 1, true), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.08, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
       beam.position.y = 2;
-      const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(i === 0 ? 'E' : i === n - 1 ? 'S' : String(i), isEnd ? '#ffd0d5' : '#d6ffe9'), depthWrite: false }));
+      const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(i === 0 ? 'E' : i === n - 1 ? 'S' : String(i), isEnd ? '#ffd0c8' : '#fff0cc'), depthWrite: false }));
       label.scale.set(2.2, 2.2, 1); label.position.y = 3.4;
       grp.add(ring, beam, label);
       grp.userData = { ring, beam };
@@ -246,10 +291,9 @@ export class Renderer {
     this.composer.setSize(w, h);
     this.bloom.setSize(w, h);
     this.camera.aspect = w / h;
-    // Fit the map on narrow screens
+    // Fixed camera: always frame the whole map, recomputed on every resize.
     const portrait = w < h * 0.9;
-    this.view.minDist = 16; this.view.maxDist = portrait ? 280 : 180;
-    if (!this.fitted) {
+    {
       // Frame the whole map, leaving room for the side dock (desktop) or the bottom sheet (phone).
       const W = this.game.grid.w, H = this.game.grid.h;
       const vfov = THREE.MathUtils.degToRad(this.camera.fov);
@@ -259,11 +303,11 @@ export class Renderer {
       const usableH = portrait ? 0.55 : 0.9;
       const needH = (H * 1.02) / (2 * Math.tan(vfov / 2) * usableH);
       const needW = (W * 1.05) / (2 * Math.tan(hfov / 2) * usableW);
-      this.view.dist = Math.min(this.view.maxDist, Math.max(needH, needW));
+      this.view.dist = Math.max(needH, needW);
       const visH = 2 * this.view.dist * Math.tan(vfov / 2);
       this.view.target.set(W / 2 + (portrait ? 0 : this.view.dist * Math.tan(hfov / 2) * (1 - usableW)), 0,
         H / 2 + (portrait ? visH * (0.5 - 0.36) : -visH * 0.02));
-      this.fitted = true;
+      this.view.minDist = this.view.maxDist = this.view.dist; // fixed board
     }
     this.camera.updateProjectionMatrix();
   }
@@ -293,6 +337,17 @@ export class Renderer {
     const v = new THREE.Vector3(x, z, y).project(this.camera);
     const rect = this.canvas.getBoundingClientRect();
     return { x: (v.x * 0.5 + 0.5) * rect.width, y: (-v.y * 0.5 + 0.5) * rect.height, visible: v.z < 1 };
+  }
+
+  // Translucent stone showing where the next placement will land.
+  setGhost(tl) {
+    if (!this.ghost) {
+      this.ghost = new THREE.Mesh(this.rockGeos[0], new THREE.MeshStandardMaterial({ color: 0x9fffcf, transparent: true, opacity: 0.45, emissive: 0x2a8a5a, depthWrite: false }));
+      this.ghost.scale.setScalar(1.2);
+      this.scene.add(this.ghost);
+    }
+    this.ghost.visible = !!tl;
+    if (tl) this.ghost.position.set(tl.x + 1, 0.4, tl.y + 1);
   }
 
   setHover(tl, ok) {
@@ -328,22 +383,42 @@ export class Renderer {
     const ped = new THREE.Mesh(this.pedestalGeo, this.pedestalMat);
     ped.position.y = 0.11; ped.castShadow = ped.receiveShadow = true;
     grp.add(ped);
-    const special = !def.base;
-    const type = def.base ? def.type : null;
-    const key = type ?? 'S';
-    if (!this.gemGeos[key]) this.gemGeos[key] = gemGeometry(type);
-    const gem = new THREE.Mesh(this.gemGeos[key], this.gemMaterial(def.color, special));
-    const size = special ? 1.25 + def.tier * 0.15 : 0.95 + def.quality * 0.15;
-    gem.scale.setScalar(size);
-    gem.position.y = 0.95 + size * 0.3;
-    gem.castShadow = true;
-    grp.add(gem);
-    let halo = null;
-    if (special) {
-      halo = new THREE.Mesh(new THREE.TorusGeometry(0.85, 0.035, 6, 48), new THREE.MeshBasicMaterial({ color: def.color }));
-      halo.position.y = gem.position.y; halo.rotation.x = Math.PI / 2.4;
-      grp.add(halo);
+    let gem, wings = null, halo = null;
+    if (def.base) {
+      // Scale rosette: more and bigger scales as quality rises.
+      gem = new THREE.Group();
+      const q = def.quality;
+      const count = [1, 1, 3, 3, 5, 6][q];
+      const size = 1.2 + q * 0.13;
+      const mat = this.gemMaterial(def.color, q >= 5);
+      for (let i = 0; i < count; i++) {
+        const sc = new THREE.Mesh(this.scaleGeo, mat);
+        const holder = new THREE.Group();
+        holder.rotation.y = (i / count) * Math.PI * 2 + 0.4;
+        sc.position.x = count === 1 ? -0.08 : 0.22;
+        sc.rotation.z = count === 1 ? 0.12 : 0.28; // tilt up toward the tip
+        sc.scale.setScalar(size * (count === 1 ? 1.15 : 0.85));
+        sc.castShadow = true;
+        holder.add(sc); gem.add(holder);
+      }
+      if (q >= 2) {
+        const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16 + q * 0.03, 0), new THREE.MeshBasicMaterial({ color: def.color }));
+        core.position.y = 0.12; gem.add(core);
+      }
+      if (q >= 5) {
+        halo = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.03, 6, 48), new THREE.MeshBasicMaterial({ color: def.color }));
+        halo.rotation.x = Math.PI / 2; halo.position.y = 0.3; grp.add(halo);
+      }
+      gem.position.y = 0.32;
+    } else {
+      const dr = buildDragon(def.color, def.tier);
+      gem = dr.group; wings = dr.wings;
+      gem.position.y = 1.5;
+      const glow = new THREE.Mesh(this.discGeo, new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0.18, depthWrite: false, blending: THREE.AdditiveBlending }));
+      glow.rotation.x = -Math.PI / 2; glow.position.y = 0.25; glow.scale.setScalar(1.1);
+      grp.add(glow);
     }
+    grp.add(gem);
     // quality pips on pedestal
     if (def.base) {
       for (let i = 0; i <= def.quality; i++) {
@@ -356,7 +431,7 @@ export class Renderer {
     const pendingRing = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.05, 32), new THREE.MeshBasicMaterial({ color: 0x6f8fb8, transparent: true, opacity: 0.4, depthWrite: false }));
     pendingRing.rotation.x = -Math.PI / 2; pendingRing.position.y = 0.04;
     grp.add(pendingRing);
-    grp.userData = { kind: 'gem', defId: def.id, gem, halo, pendingRing, baseY: gem.position.y, phase: e.uid * 0.7 };
+    grp.userData = { kind: 'gem', defId: def.id, gem, wings, dragon: !def.base, halo, pendingRing, baseY: gem.position.y, phase: e.uid * 0.7, yaw: e.uid };
     return grp;
   }
 
@@ -385,33 +460,59 @@ export class Renderer {
 
   enemyMesh(en) {
     const t = en.type;
-    const hue = ((t.level * 47) % 360) / 360;
-    const color = new THREE.Color().setHSL(hue, 0.6, 0.42);
+    const R = RACES[t.race] || RACES.human;
+    const color = new THREE.Color(R.color);
     const grp = new THREE.Group();
-    const scale = t.boss ? 2.2 : 1.25;
-    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0.15, emissive: color.clone().multiplyScalar(0.06), transparent: true });
-    let body;
+    const scale = (t.boss ? 1.8 : 1) * R.size * 1.45;
+    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: R.metal ?? 0.2, emissive: color.clone().multiplyScalar(R.glow ?? 0.05), transparent: true, opacity: R.ghost ? 0.7 : 1 });
+    const skin = new THREE.MeshStandardMaterial({ color: R.skin, roughness: 0.7, transparent: true });
+    const trim = new THREE.MeshStandardMaterial({ color: R.trim ?? 0x3a3f4a, roughness: 0.5, metalness: 0.5 });
+    const body = new THREE.Group();
+    grp.userData.mats = [mat, skin];
     if (t.air) {
-      body = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), mat);
-      body.scale.set(1, 0.6, 1.3);
-      const wingGeo = new THREE.PlaneGeometry(1.1, 0.5);
-      const wingMat = new THREE.MeshStandardMaterial({ color: color.clone().offsetHSL(0, 0, 0.15), side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
-      const wl = new THREE.Mesh(wingGeo, wingMat), wr = new THREE.Mesh(wingGeo, wingMat);
-      wl.position.x = -0.7; wr.position.x = 0.7; wl.rotation.x = wr.rotation.x = -Math.PI / 2;
-      const wings = new THREE.Group(); wings.add(wl, wr);
-      body.add(wings);
-      grp.userData.wings = [wl, wr];
+      if (R.kind === 'airship') {
+        const balloon = new THREE.Mesh(new THREE.SphereGeometry(0.55, 14, 10), mat); balloon.scale.set(0.8, 0.7, 1.4); balloon.position.y = 0.35;
+        const gondola = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.2, 0.6), trim); gondola.position.y = -0.25;
+        const prop = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.04, 0.08), trim); prop.position.set(0, 0.35, -0.8);
+        body.add(balloon, gondola, prop); grp.userData.prop = prop;
+      } else if (R.kind === 'spirit') {
+        const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.4, 1), mat);
+        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.9, 8), mat); tail.rotation.x = -Math.PI / 2; tail.position.z = -0.55;
+        body.add(orb, tail);
+      } else {
+        const torso = new THREE.Mesh(new THREE.SphereGeometry(0.35, 10, 8), mat); torso.scale.set(0.9, 0.7, 1.4);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 8, 6), R.kind === 'witch' ? skin : mat); head.position.set(0, 0.12, 0.5);
+        body.add(torso, head);
+        if (R.kind === 'witch') { const broom = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.5, 5), trim); broom.rotation.x = Math.PI / 2; broom.position.y = -0.15; const hat = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.4, 6), trim); hat.position.set(0, 0.35, 0.5); body.add(broom, hat); }
+        if (R.kind === 'griffin') { const rider = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), skin); rider.position.set(0, 0.3, 0.05); const beak = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.22, 4), trim); beak.rotation.x = Math.PI / 2; beak.position.set(0, 0.1, 0.72); body.add(rider, beak); }
+        if (R.kind !== 'witch') {
+          const wingGeo = new THREE.PlaneGeometry(1.1, 0.5);
+          const wingMat = new THREE.MeshStandardMaterial({ color: R.wing ?? R.color, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+          const wl = new THREE.Mesh(wingGeo, wingMat), wr = new THREE.Mesh(wingGeo, wingMat);
+          wl.position.x = -0.65; wr.position.x = 0.65; wl.rotation.x = wr.rotation.x = -Math.PI / 2;
+          const pl = new THREE.Group(), pr = new THREE.Group(); pl.add(wl); pr.add(wr);
+          body.add(pl, pr); grp.userData.wings = [pl, pr];
+        }
+      }
       const shadow = new THREE.Mesh(this.discGeo, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }));
-      shadow.rotation.x = -Math.PI / 2; shadow.scale.setScalar(0.6 * scale); shadow.position.y = 0.02;
+      shadow.rotation.x = -Math.PI / 2; shadow.scale.setScalar(0.55 * scale); shadow.position.y = 0.02;
       grp.add(shadow);
     } else {
-      body = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 12), mat);
-      body.scale.set(1, 0.85, 1.05);
-      // eyes
-      const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      for (const s of [-1, 1]) { const eye = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), eyeMat); eye.position.set(0.2 * s, 0.15, 0.48); body.add(eye); }
+      // Humanoid seen from above: shoulders, head, weapon, optional shield.
+      const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.26, 0.3, 4, 10), mat);
+      torso.scale.set(R.wide ?? 1, 1, 0.75); torso.position.y = 0.42;
+      const shoulders = new THREE.Mesh(new THREE.BoxGeometry(0.72 * (R.wide ?? 1), 0.14, 0.3), trim); shoulders.position.y = 0.66;
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), skin); head.position.y = 0.86;
+      const weapon = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.8), new THREE.MeshStandardMaterial({ color: 0xcfd6e0, metalness: 0.8, roughness: 0.3 }));
+      weapon.position.set(0.36 * (R.wide ?? 1), 0.6, 0.25);
+      body.add(torso, shoulders, head, weapon);
+      if (R.shield) { const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.05, 10), trim); sh.rotation.z = Math.PI / 2; sh.position.set(-0.4 * (R.wide ?? 1), 0.5, 0.1); body.add(sh); }
+      if (R.ears) for (const sx of [-1, 1]) { const ear = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.25, 4), skin); ear.rotation.z = -sx * 1.2; ear.position.set(0.2 * sx, 0.9, 0); body.add(ear); }
+      if (R.tusks) for (const sx of [-1, 1]) { const tusk = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.12, 4), new THREE.MeshStandardMaterial({ color: 0xf0ead8 })); tusk.rotation.x = -1.2; tusk.position.set(0.07 * sx, 0.8, 0.16); body.add(tusk); }
+      if (R.beard) { const beard = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.3, 6), new THREE.MeshStandardMaterial({ color: R.beard })); beard.rotation.x = Math.PI; beard.position.set(0, 0.7, 0.12); body.add(beard); }
     }
-    body.castShadow = true;
+    if (t.boss) { const crown = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.04, 6, 12), new THREE.MeshStandardMaterial({ color: 0xffcf3a, metalness: 0.9, roughness: 0.2, emissive: 0x553300 })); crown.rotation.x = Math.PI / 2; crown.position.y = t.air ? 0.35 : 1.02; body.add(crown); }
+    body.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     body.scale.multiplyScalar(scale);
     grp.add(body);
     // HP bar
@@ -422,7 +523,7 @@ export class Renderer {
     bar.position.y = (t.air ? 3.4 : 1.5) * (t.boss ? 1.25 : 1);
     bar.scale.setScalar(t.boss ? 1.6 : 1);
     grp.add(bar);
-    Object.assign(grp.userData, { body, mat, bar, barFg, air: t.air, phase: Math.random() * 6, scale });
+    Object.assign(grp.userData, { body, mat, bar, barFg, air: t.air, phase: Math.random() * 6, scale, ghost: !!R.ghost });
     return grp;
   }
 
@@ -440,13 +541,15 @@ export class Renderer {
       const t = this.time + ud.phase;
       if (ud.air) {
         ud.body.position.y = 2.6 + Math.sin(t * 3) * 0.2;
-        for (const [i, w] of ud.wings.entries()) w.rotation.z = (i ? -1 : 1) * Math.sin(t * 14) * 0.5;
+        if (ud.wings) for (const [i, w] of ud.wings.entries()) w.rotation.z = (i ? -1 : 1) * Math.sin(t * 14) * 0.5;
+        if (ud.prop) ud.prop.rotation.z += dt * 20;
       } else {
-        ud.body.position.y = 0.5 * ud.scale + Math.abs(Math.sin(t * 9)) * 0.12;
+        ud.body.position.y = Math.abs(Math.sin(t * 9)) * 0.1;
+        ud.body.rotation.z = Math.sin(t * 9) * 0.06;
       }
       // status tint
       const visible = this.game.visible(en);
-      ud.mat.opacity = visible ? 1 : 0.25;
+      for (const mm of m.userData.mats) mm.opacity = visible ? (ud.ghost && mm === ud.mat ? 0.7 : 1) : 0.25;
       const em = ud.mat.emissive;
       if (en.hitFlash > 0) em.setRGB(0.9, 0.9, 0.9);
       else if (en.stun > 0) em.setRGB(0.6, 0.55, 0.1);
@@ -601,7 +704,7 @@ export class Renderer {
     this.groundMat.uniforms.uTime.value = this.time;
     this.updateCamera();
     this.syncEntities();
-    for (const m of this.meshes.values()) {
+    for (const [uid, m] of this.meshes) {
       const ud = m.userData;
       if (ud.spawn !== undefined && ud.spawn < 1) {
         ud.spawn = Math.min(1, ud.spawn + dt * 4);
@@ -609,13 +712,27 @@ export class Renderer {
         m.scale.setScalar(0.2 + s * 0.8 + Math.sin(s * Math.PI) * 0.15);
       }
       if (ud.gem) {
-        ud.gem.rotation.y += dt * 0.6;
         ud.kick = Math.max(0, (ud.kick || 0) - dt);
-        ud.gem.position.y = ud.baseY + Math.sin(this.time * 1.6 + ud.phase) * 0.08 + ud.kick * 0.8;
+        if (ud.dragon) {
+          // Turn toward the current target, flap, bob.
+          const ent = this.game.entities.get(uid);
+          if (ent?.aim) {
+            const want = Math.atan2(ent.aim.x / CELL - (ent.x + 1), ent.aim.y / CELL - (ent.y + 1));
+            let d = want - ud.gem.rotation.y; d = Math.atan2(Math.sin(d), Math.cos(d));
+            ud.gem.rotation.y += d * Math.min(1, dt * 8);
+          } else ud.gem.rotation.y += dt * 0.15;
+          const flap = Math.sin(this.time * (ent?.aim ? 9 : 4) + ud.phase);
+          for (const w of ud.wings) w.pivot.rotation.z = w.sx * (0.15 + flap * 0.45);
+          ud.gem.position.y = ud.baseY + Math.sin(this.time * 2 + ud.phase) * 0.12;
+        } else {
+          ud.gem.rotation.y += dt * 0.5;
+          ud.gem.position.y = ud.baseY + Math.sin(this.time * 1.6 + ud.phase) * 0.05 + ud.kick * 0.6;
+        }
         if (ud.halo) ud.halo.rotation.z += dt * 1.2;
         if (ud.pendingRing?.visible) ud.pendingRing.material.opacity = 0.3 + Math.sin(this.time * 5) * 0.2;
       }
     }
+    if (this.ghost?.visible) this.ghost.position.y = 0.4 + Math.sin(this.time * 4) * 0.1;
     this.syncEnemies(dt);
     this.syncProjectiles();
     this.updateParticles(dt);
