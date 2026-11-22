@@ -545,7 +545,7 @@ export class Game {
     let dmg = def.dmg * (1 + p.buffDmg);
     let crit = false;
     for (const a of def.abilities) if (a.k === 'crit' && this.rng() < a.chance) { dmg *= a.mult; crit = true; }
-    this.fx.push({ t: 'hit', x: en.x, y: en.y, color: p.color, crit, air: en.type.air });
+    this.fx.push({ t: 'hit', x: en.x, y: en.y, color: p.color, crit, air: en.type.air, def: p.def });
     this.damage(en, dmg, 'phys', p.tower);
     for (const a of def.abilities) {
       switch (a.k) {

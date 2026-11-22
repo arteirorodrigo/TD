@@ -6,6 +6,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { CELL, tierTag } from './data/towers.js';
+import { AttackFx, ATTACK_STYLE } from './attack-fx.js';
 import grassUrl from './assets/mapa_gramado.jpg';
 import dragonModelUrl from './assets/dragoes/dragao-obj.glb?url';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -260,6 +261,7 @@ export class Renderer {
     this.enemyMeshes = new Map();
     this.projMeshes = [];
     this.particles = this.makeParticles();
+    this.attackFx = ATTACK_STYLE ? new AttackFx(this) : null;
     this.effects = [];
 
     // Selection / range indicators
@@ -662,7 +664,8 @@ export class Renderer {
     for (const [uid, m] of this.enemyMeshes) if (!seen.has(uid)) { this.disposeGroup(m); this.enemyMeshes.delete(uid); }
   }
 
-  syncProjectiles() {
+  syncProjectiles(dt = 1 / 60) {
+    if (this.attackFx) { this.attackFx.update(dt); return; }
     const ps = this.game.projectiles;
     while (this.projMeshes.length < ps.length) {
       const m = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
@@ -752,7 +755,7 @@ export class Renderer {
         case 'place': this.burst(f.x + 1, 0.5, f.y + 1, 0xcfe6ff, 22, 5, 0.6); this.addRing(f.x + 1, f.y + 1, 1.6, 0x9fd2ff); break;
         case 'upgrade': this.burst(f.x + 1, 1.2, f.y + 1, f.color, 60, 7, 1.0); this.addRing(f.x + 1, f.y + 1, 3.5, f.color, 0.8); break;
         case 'remove': this.burst(f.x + 1, 0.4, f.y + 1, 0x8a8f99, 20, 4, 0.5); break;
-        case 'hit': this.burst(U(f.x), f.air ? 2.6 : 1.1, U(f.y), f.color, f.crit ? 18 : 5, f.crit ? 5 : 2.5, 0.3); if (f.crit) onText?.(f.x, f.y, 'CRÍTICO', 'crit'); break;
+        case 'hit': if (this.attackFx) { this.attackFx.hit(f); if (f.crit) onText?.(f.x, f.y, 'CRÍTICO', 'crit'); break; } this.burst(U(f.x), f.air ? 2.6 : 1.1, U(f.y), f.color, f.crit ? 18 : 5, f.crit ? 5 : 2.5, 0.3); if (f.crit) onText?.(f.x, f.y, 'CRÍTICO', 'crit'); break;
         case 'splash': this.addRing(U(f.x), U(f.y), U(f.r), f.color, 0.35); break;
         case 'lightning': this.addLightning(f.pts, f.color); break;
         case 'death': this.burst(U(f.x), f.air ? 2.6 : 0.8, U(f.y), f.boss ? 0xffd34a : 0xffb27a, f.boss ? 120 : 26, f.boss ? 9 : 5, 0.8); onText?.(f.x, f.y, `+${f.gold}`, 'gold'); break;
@@ -1028,7 +1031,7 @@ export class Renderer {
       this.enemyRing.position.set(U(sel.x), sel.type.air ? 1.2 : 0.06, U(sel.y));
       this.enemyRing.scale.setScalar((sel.type.boss ? 1.4 : 1) * (1 + Math.sin(this.time * 6) * 0.08));
     }
-    this.syncProjectiles();
+    this.syncProjectiles(dt);
     this.updateParticles(dt);
     this.updateEffects(dt);
     if (this.selected) {

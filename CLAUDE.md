@@ -29,8 +29,9 @@ O dono não é programador: fale em português simples, sem termos técnicos, e 
 - Modelos e imagens de fora: só grátis e com licença comercial. Arquivos grandes (`docs/referencias/*.glb`, `*.obj`) ficam fora do git.
 - Auditorias: comando `/auditoria` (agentes em `.claude/agents/`). O que o dono recusou está em `docs/auditorias/decisoes-do-dono.md` e não volta.
 
-## Pendências (fim de 22/11/2026)
-1. Melhorias aprovadas da auditoria, plano `docs/superpowers/plans/2026-11-22-auditoria-1.md`: tarefa 1 feita; faltam 2 (infinito repete fases 26–50 + chefes mais fortes), 3 ("Trocar uma pedra" com ouro, só com a sorte no máximo), 4 (aviso de ondas especiais), 5 (celular deitado), 6 (dicas na primeira partida), 7 (festa ao chocar dragão).
-2. Ataque visual diferente por elemento (fogo, veneno, gelo…), e dragão sentado na construção / voando na onda.
-3. Ranking online com Firebase (Parte 2): dono cria a conta grátis; apelido na 1ª vez; um ranking por nível.
-4. Pequenos erros: "Novo recorde!" ao sair na fase 1, "1 defensores", dano de veneno/aura não somado no cartão, chocar dragão só com torres antigas.
+## Pendências (23/11/2026, branch `auditoria-1`, ainda não publicado)
+- Feito em 23/11: tarefas 2–7 da auditoria (plano `docs/superpowers/plans/2026-11-22-auditoria-1.md`), pequenos erros (veneno/aura no dano, recorde na fase 1, plural, inimigos parados ao sair, clique em voadores, destaque da rodada, vida 15/14) e o nome novo.
+1. Ataque por elemento: 3 ideias em `docs/ataque-ideias/` (1 projéteis, 2 feixes, 3 sopro), testáveis com `?ataque=1|2|3` na URL (`src/attack-fx.js`). Aguardando o dono escolher.
+2. Decisão pendente: chocar dragão só com torres antigas faz as 5 pedras novas virarem rocha.
+3. Revisão final do branch antes de publicar; dragão sentado na construção / voando na onda.
+4. Ranking online com Firebase (Parte 2) — deixado para depois pelo dono.
