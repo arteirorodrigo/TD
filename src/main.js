@@ -50,7 +50,7 @@ function renderUI() {
     const b = document.createElement('button');
     b.className = 'slot' + (e ? ' filled' : '') + (e && e.uid === selectedUid ? ' sel' : '');
     if (e) {
-      b.innerHTML = `<span><span class="swatch" style="color:${hex(e.def.color)};background:${hex(e.def.color)}"></span>${tierTag(e.def.quality)}</span>`;
+      b.innerHTML = `<span><span class="swatch" style="color:${hex(e.def.color)};background:${hex(e.def.color)}"></span>${e.def.base ? tierTag(e.def.quality) : ""}</span>`;
       b.title = e.def.name;
       b.onclick = () => select(e.uid);
     } else { b.textContent = i + 1; b.disabled = true; }
@@ -119,6 +119,19 @@ function renderEnemyCard(card, en) {
     <div>${fx.length ? fx.map((x) => `<span class="tag">${x}</span>`).join('') : '<span class="muted">Sem efeitos</span>'}</div>`;
 }
 
+function ingredientName(id) {
+  const t = TOWERS[id];
+  return t.base ? `${t.name} · ${tierTag(t.quality)}` : t.name;
+}
+function evolutionHtml(e) {
+  const evos = game.evolutionInfo(e.uid);
+  if (!evos.length) return '<div class="evo"><h3>Próxima evolução</h3><p class="muted">Estágio final</p></div>';
+  return '<div class="evo"><h3>Próxima evolução</h3>' + evos.map((ev) => `
+    <div class="evo-item"><b style="color:${hex(TOWERS[ev.result].color)}">${TOWERS[ev.result].name}</b>
+      <ul>${ev.items.map((it) => `<li class="${it.have ? 'ok' : 'no'}">${it.have ? '✓' : '✗'} ${ingredientName(it.id)}${it.self ? ' (este)' : ''}</li>`).join('')}</ul>
+    </div>`).join('') + '</div>';
+}
+
 function renderSelection() {
   const card = $('sel-card');
   if (selectedEnemyUid) {
@@ -149,6 +162,7 @@ function renderSelection() {
   if (e.pending) html += '<span class="tag">Nova nesta rodada</span>';
   else if (!def.base) html += '<span class="tag boss">Dragão</span>';
   html += towerStats(def, e);
+  if (!def.base && !e.pending) html += evolutionHtml(e);
   const actions = [];
   if (game.phase === 'choose') {
     if (e.pending) actions.push(`<button class="btn primary" data-act="keep">Manter esta escama</button>`);

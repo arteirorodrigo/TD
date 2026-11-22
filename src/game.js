@@ -152,6 +152,27 @@ export class Game {
     return out;
   }
 
+  // Every recipe that uses this gem/dragon, with each ingredient marked as present on the field or not.
+  evolutionInfo(uid) {
+    const sel = this.entities.get(uid);
+    if (!sel || sel.kind !== 'gem') return [];
+    const pool = [...this.entities.values()].filter((e) => e.kind === 'gem' && e.uid !== uid);
+    const out = [];
+    for (const r of RECIPES) {
+      if (!r.ingredients.includes(sel.def.id)) continue;
+      const used = new Set();
+      let selUsed = false;
+      const items = r.ingredients.map((id) => {
+        if (!selUsed && id === sel.def.id) { selUsed = true; return { id, self: true, have: true }; }
+        const c = pool.find((p) => !used.has(p.uid) && p.def.id === id);
+        if (c) used.add(c.uid);
+        return { id, self: false, have: !!c };
+      });
+      out.push({ result: r.result, items });
+    }
+    return out;
+  }
+
   finishRound(keepUid, newDefId, consumed = []) {
     const keep = this.entities.get(keepUid);
     keep.def = TOWERS[newDefId];

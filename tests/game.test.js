@@ -73,3 +73,26 @@ test('enemyNear picks closest within range', () => {
   assert.equal(g.enemyNear(11.6, 10).uid, 2);
   assert.equal(g.enemyNear(30, 30), null);
 });
+
+test('evolutionInfo lists next stage with have flags', () => {
+  const g = new Game();
+  g.entities.set(900, { uid: 900, x: 1, y: 1, kind: 'gem', def: TOWERS.asteriatedRuby, pending: false });
+  g.entities.set(901, { uid: 901, x: 5, y: 5, kind: 'gem', def: TOWERS.R4, pending: false });
+  const [evo] = g.evolutionInfo(900);
+  assert.equal(evo.result, 'volcano');
+  assert.deepEqual(evo.items.map((i) => [i.id, i.self, i.have]), [['asteriatedRuby', true, true], ['R4', false, true], ['P3', false, false]]);
+});
+
+test('evolutionInfo empty for final stage', () => {
+  const g = new Game();
+  g.entities.set(900, { uid: 900, x: 1, y: 1, kind: 'gem', def: TOWERS.crownPrince, pending: false });
+  assert.deepEqual(g.evolutionInfo(900), []);
+});
+
+test('evolutionInfo does not reuse one gem for a repeated ingredient', () => {
+  const g = new Game();
+  g.entities.set(900, { uid: 900, x: 1, y: 1, kind: 'gem', def: TOWERS.R5, pending: false });
+  g.entities.set(901, { uid: 901, x: 5, y: 5, kind: 'gem', def: TOWERS.P5, pending: false });
+  const evo = g.evolutionInfo(900).find((e) => e.result === 'burningStone');
+  assert.deepEqual(evo.items.map((i) => i.have), [true, true, false, false]);
+});
