@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { Game, DIFFICULTIES } from '../src/game.js';
 import { Grid } from '../src/map.js';
 import { waveFor, bountyFor } from '../src/data/enemies.js';
+import { getRecords, submitRecord, bestOverall } from '../src/records.js';
 import { TOWERS, RECIPES, CELL, tierTag, tierLabel } from '../src/data/towers.js';
 
 test('initial path exists through all waypoints', () => {
@@ -153,4 +154,42 @@ test('game keeps going after wave 50', () => {
   g.endWave();
   assert.equal(g.level, 51);
   assert.equal(g.phase, 'build');
+});
+
+function fakeStorage() {
+  const m = new Map();
+  return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)) };
+}
+
+test('submitRecord keeps the best phase, ties by lives', () => {
+  const s = fakeStorage();
+  assert.equal(submitRecord(s, 'medio', 12, 3).isNew, true);
+  assert.equal(submitRecord(s, 'medio', 10, 9).isNew, false);
+  assert.equal(submitRecord(s, 'medio', 12, 5).isNew, true);
+  assert.deepEqual(getRecords(s).medio, { phase: 12, lives: 5 });
+});
+
+test('bestOverall picks the highest phase across difficulties', () => {
+  const s = fakeStorage();
+  assert.equal(bestOverall(s), null);
+  submitRecord(s, 'facil', 30, 2);
+  submitRecord(s, 'dificil', 12, 1);
+  assert.deepEqual(bestOverall(s), { diffKey: 'facil', phase: 30 });
+});
+
+test('records survive a broken storage', () => {
+  const bad = { getItem() { throw new Error('x'); }, setItem() { throw new Error('x'); } };
+  assert.deepEqual(getRecords(bad), {});
+  assert.equal(submitRecord(bad, 'medio', 3, 1).isNew, true);
+  assert.equal(bestOverall(bad), null);
+});
+
+test('quit ends the match once', () => {
+  const g = new Game();
+  let n = 0;
+  g.on((t) => { if (t === 'over') n++; });
+  g.quit(); g.quit();
+  assert.equal(g.phase, 'over');
+  assert.equal(g.quitted, true);
+  assert.equal(n, 1);
 });

@@ -258,6 +258,14 @@ export class Game {
     return best;
   }
 
+  // Player leaves mid-match: the match ends where it is and the current phase counts as the result.
+  quit() {
+    if (this.phase === 'over') return;
+    this.phase = 'over';
+    this.quitted = true;
+    this.emit('over');
+  }
+
   healLife() {
     if (this.lives >= this.maxLives) return;
     this.lives++;
