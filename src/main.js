@@ -245,7 +245,7 @@ function renderSelection() {
   view.showSelection(e);
   if (e.kind === 'rock') {
     const can = game.phase === 'build' || game.phase === 'choose';
-    card.innerHTML = `<h2>Pedra</h2><p class="hint">Bloqueia o caminho como as escamas, mas não ataca.${game.phase === 'build' ? ' Na construção, dá para trocar esta pedra por uma das 5 novas: toque de novo nela ou em "Trocar a pedra".' : ''}</p>
+    card.innerHTML = `<h2>Pedra</h2><p class="hint">Bloqueia o caminho como as escamas, mas não ataca.${game.phase === 'build' ? ' Na construção, dá para trocar esta pedra por uma das 5 novas: toque de novo nela ou em "Trocar por escama".' : ''}</p>
       <div class="actions"><button class="btn" id="act-remove" ${can ? '' : 'disabled'}>Remover pedra</button></div>
       ${can ? '' : '<p class="hint">Só dá para remover entre as ondas.</p>'}`;
     $('act-remove').onclick = () => { game.removeRock(e.uid); select(null); };
@@ -459,7 +459,7 @@ function setAim(tl) {
   aimSpot = tl;
   view.setGhost(tl);
   $('confirm').hidden = !tl;
-  if (tl) $('confirm-ok').textContent = game.rockAt(tl.x, tl.y) ? 'Trocar a pedra' : 'Colocar aqui';
+  if (tl) $('confirm-ok').textContent = game.rockAt(tl.x, tl.y) ? 'Trocar por escama' : 'Colocar aqui';
   if (tl) view.setHover(tl, true); else view.setHover(null);
 }
 function confirmPlace() {
