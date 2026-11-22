@@ -256,7 +256,7 @@ export class Renderer {
     this.rockGeos = Array.from({ length: 6 }, (_, i) => rockGeometry(i + 1));
     this.rockMat = new THREE.MeshStandardMaterial({ color: 0x4a4f58, roughness: 0.92, metalness: 0.05, flatShading: true });
     this.pedestalGeo = new THREE.CylinderGeometry(0.85, 0.95, 0.22, 6);
-    this.pedestalMat = new THREE.MeshStandardMaterial({ color: 0x1b2230, roughness: 0.6, metalness: 0.4 });
+    this.pedestalMat = new THREE.MeshStandardMaterial({ color: 0x1b2230, roughness: 0.6, metalness: 0.4, visible: false }); // base transparente (pedido do dono 22/11: no pergaminho o preto pesava)
     this.ringGeo = new THREE.RingGeometry(0.98, 1, 96);
     this.discGeo = new THREE.CircleGeometry(1, 64);
     // Geometries shared by many meshes: never disposed with a single mesh.
