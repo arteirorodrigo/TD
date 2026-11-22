@@ -345,15 +345,17 @@ export class Renderer {
       const W = this.game.grid.w, H = this.game.grid.h;
       const vfov = THREE.MathUtils.degToRad(this.camera.fov);
       const hfov = 2 * Math.atan(Math.tan(vfov / 2) * (w / h));
-      const usableW = portrait ? 1 : Math.max(0.5, (w - 330) / w);
+      // Phone lying down: narrow 240px panel on the right and a slim top bar.
+      const lying = !portrait && h <= 480;
+      const usableW = portrait ? 1 : lying ? (w - 262) / w : Math.max(0.5, (w - 330) / w);
       // On phones the map sits in the top ~55% of the screen, above the bottom sheet.
-      const usableH = portrait ? 0.55 : 0.9;
+      const usableH = portrait ? 0.55 : lying ? (h - 50) / h : 0.9;
       const needH = (H * 1.02) / (2 * Math.tan(vfov / 2) * usableH);
       const needW = (W * 1.05) / (2 * Math.tan(hfov / 2) * usableW);
       const dist = Math.max(needH, needW);
       const visH = 2 * dist * Math.tan(vfov / 2);
       const target = new THREE.Vector3(W / 2 + (portrait ? 0 : dist * Math.tan(hfov / 2) * (1 - usableW)), 0,
-        H / 2 + (portrait ? visH * (0.5 - 0.36) : -visH * 0.02));
+        H / 2 + (portrait ? visH * (0.5 - 0.36) : lying ? -visH * (44 / h) / 2 : -visH * 0.02));
       // Fully zoomed out = this framing. Zoom in down to ~30%; panning stays inside it.
       this.fit = { dist, target, tanH: Math.tan(hfov / 2), tanV: Math.tan(vfov / 2) };
       this.view.maxDist = dist; this.view.minDist = dist * 0.3;

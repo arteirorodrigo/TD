@@ -558,6 +558,8 @@ window.addEventListener('keydown', (ev) => {
   if (ev.key === '0') resetView();
 });
 window.addEventListener('resize', () => view.resize());
+// Folding cards (only folded on a phone lying down, see CSS): tap the title to open or close.
+for (const id of ['luck-card', 'wave-card']) $(id).addEventListener('click', (ev) => { if (ev.target.closest('h3')) $(id).classList.toggle('open'); });
 
 // ---------- Loop ----------
 let last = performance.now(), uiTimer = 0;
