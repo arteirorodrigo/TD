@@ -190,16 +190,46 @@ const canvas = $('game');
 function tlFromPoint(cx, cy) {
   const p = view.pick(cx, cy);
   if (!p) return null;
-  return { x: Math.round(p.x) - 1, y: Math.round(p.y) - 1, fx: p.x, fy: p.y };
+  // Snap to the 2x2 build grid (cells start on odd squares).
+  return { x: 2 * Math.floor((p.x - 1) / 2) + 1, y: 2 * Math.floor((p.y - 1) / 2) + 1, fx: p.x, fy: p.y };
 }
 
-// The board is fixed: the camera always frames the whole map, so there is no pan or zoom.
+// Zoom in to place stones comfortably; zooming out stops at the full-map view and panning stays inside the map.
+const pointers = new Map();
+let pinch = null;
 canvas.addEventListener('pointerdown', (ev) => {
-  drag = { x: ev.clientX, y: ev.clientY, id: ev.pointerId, button: ev.button };
+  canvas.setPointerCapture(ev.pointerId);
+  pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), dist: view.view.dist };
+    drag = null;
+  } else {
+    drag = { x: ev.clientX, y: ev.clientY, id: ev.pointerId, button: ev.button, moved: false, target: view.view.target.clone() };
+  }
 });
 canvas.addEventListener('pointermove', (ev) => {
+  if (pointers.has(ev.pointerId)) pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+  if (pinch && pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    const want = pinch.dist * pinch.d / Math.max(10, Math.hypot(a.x - b.x, a.y - b.y));
+    zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, want / view.view.dist);
+    return;
+  }
+  if (drag && drag.id === ev.pointerId) {
+    const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) > 10) drag.moved = true;
+    if (drag.moved) {
+      const k = (2 * view.view.dist * Math.tan(THREE_DEG(view.camera.fov) / 2)) / canvas.clientHeight;
+      view.view.target.x = drag.target.x - dx * k;
+      view.view.target.z = drag.target.z - dy * k;
+      view.setHover(aimSpot, true);
+      return;
+    }
+  }
   if (ev.pointerType === 'mouse') updateHover(ev.clientX, ev.clientY);
 });
+const THREE_DEG = (d) => (d * Math.PI) / 180;
 function updateHover(cx, cy) {
   if (aimSpot) return; // keep the chosen spot highlighted until confirmed or cancelled
   if (game.phase !== 'build') { view.setHover(null); canvas.style.cursor = 'default'; return; }
@@ -211,12 +241,28 @@ function updateHover(cx, cy) {
   view.setHover(tl, game.canPlace(tl.x, tl.y));
 }
 canvas.addEventListener('pointerup', (ev) => {
-  if (drag && drag.id === ev.pointerId && drag.button === 0 && Math.hypot(ev.clientX - drag.x, ev.clientY - drag.y) < 14) onTap(ev.clientX, ev.clientY);
-  drag = null;
+  const wasPinch = !!pinch;
+  pointers.delete(ev.pointerId);
+  if (pointers.size < 2) pinch = null;
+  if (!wasPinch && drag && drag.id === ev.pointerId && drag.button === 0 && !drag.moved) onTap(ev.clientX, ev.clientY);
+  if (drag?.id === ev.pointerId || wasPinch) drag = null;
 });
-canvas.addEventListener('pointercancel', () => { drag = null; });
-canvas.addEventListener('pointerleave', () => view.setHover(null));
-canvas.addEventListener('wheel', (ev) => ev.preventDefault(), { passive: false });
+canvas.addEventListener('pointercancel', (ev) => { pointers.delete(ev.pointerId); pinch = null; drag = null; });
+canvas.addEventListener('pointerleave', () => { if (!aimSpot) view.setHover(null); });
+canvas.addEventListener('wheel', (ev) => { ev.preventDefault(); zoomAt(ev.clientX, ev.clientY, Math.exp(ev.deltaY * 0.0012)); }, { passive: false });
+// Zoom keeping the point under the cursor/fingers in place.
+function zoomAt(cx, cy, factor) {
+  const v = view.view;
+  const before = view.pick(cx, cy);
+  const old = v.dist;
+  v.dist = Math.min(v.maxDist, Math.max(v.minDist, v.dist * factor));
+  if (!before) return;
+  const k = 1 - v.dist / old;
+  v.target.x += (before.x - v.target.x) * k;
+  v.target.z += (before.y - v.target.z) * k;
+}
+function resetView() { view.view.dist = view.fit.dist; view.view.target.copy(view.fit.target); }
+$('btn-fit').onclick = resetView;
 canvas.addEventListener('contextmenu', (ev) => ev.preventDefault());
 
 // Placing is two steps: tap marks the spot (preview), then confirm (button, Enter, or tapping the same spot).
@@ -242,7 +288,7 @@ function onTap(cx, cy) {
   const ent = game.entityAt(Math.floor(tl.fx), Math.floor(tl.fy));
   if (ent) { setAim(null); select(ent.uid === selectedUid ? null : ent.uid); return; }
   if (game.phase === 'build') {
-    if (aimSpot && Math.abs(aimSpot.x - tl.x) <= 1 && Math.abs(aimSpot.y - tl.y) <= 1) { confirmPlace(); return; }
+    if (aimSpot && aimSpot.x === tl.x && aimSpot.y === tl.y) { confirmPlace(); return; }
     if (game.canPlace(tl.x, tl.y)) { select(null); setAim({ x: tl.x, y: tl.y }); return; }
     setAim(null);
     const inMap = tl.x >= 0 && tl.y >= 0 && tl.x <= game.grid.w - 2 && tl.y <= game.grid.h - 2;
@@ -275,6 +321,7 @@ window.addEventListener('keydown', (ev) => {
   if (ev.key === '1') setSpeed(1);
   if (ev.key === '2') setSpeed(2);
   if (ev.key === '4') setSpeed(4);
+  if (ev.key === '0') resetView();
 });
 window.addEventListener('resize', () => view.resize());
 

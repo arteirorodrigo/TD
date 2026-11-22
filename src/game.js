@@ -63,8 +63,11 @@ export class Game {
   }
 
   // ---------- Build phase ----------
+  // Stones snap to the 2x2 build grid, aligned with the waypoints and paths (odd squares),
+  // so neighbouring stones always touch and never leave useless 1-square gaps.
+  static aligned(x, y) { return x % 2 === 1 && y % 2 === 1; }
   canPlace(x, y) {
-    return this.phase === 'build' && this.pending.length < STONES_PER_ROUND && this.grid.tryBlock(x, y);
+    return this.phase === 'build' && this.pending.length < STONES_PER_ROUND && Game.aligned(x, y) && this.grid.tryBlock(x, y);
   }
 
   rollGem() {

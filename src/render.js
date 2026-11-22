@@ -132,8 +132,8 @@ void main(){
   float path = c.r, plat = c.g, block = c.b;
   float inside = step(0., p.x) * step(0., p.y) * step(p.x, uSize.x) * step(p.y, uSize.y);
   vec3 base = mix(vec3(.15,.125,.11), vec3(.21,.18,.155), smoothstep(45., 0., length(p - uSize*.5)));
-  float fine = gridLine(p, 1.0) * .06;
-  float major = gridLine(p / 2., 1.0) * .12;
+  float fine = gridLine(p, 1.0) * .025;
+  float major = gridLine((p - 1.) / 2., 1.2) * .2; // build cells: 2x2, starting on odd squares
   vec3 col = base + vec3(.55,.42,.30) * (fine + major);
   // path glow with a slow flowing pulse
   float flow = .55 + .45 * sin((p.x + p.y) * .35 - uTime * 2.2);
@@ -142,7 +142,8 @@ void main(){
   col += vec3(1.,.75,.3) * plat * gridLine(p, 1.2) * .2;
   // hover footprint
   if (uHover.w > 0. && p.x >= uHover.x && p.x < uHover.x + 2. && p.y >= uHover.y && p.y < uHover.y + 2.) {
-    col = mix(col, uHoverColor, .45);
+    vec2 q = p - uHover.xy; float bd = min(min(q.x, 2. - q.x), min(q.y, 2. - q.y));
+    col = mix(col, uHoverColor, .35 + .5 * (1. - smoothstep(.05, .14, bd)));
   }
   col = mix(vec3(.05,.045,.045), col, inside);
   // border
@@ -291,7 +292,7 @@ export class Renderer {
     this.composer.setSize(w, h);
     this.bloom.setSize(w, h);
     this.camera.aspect = w / h;
-    // Fixed camera: always frame the whole map, recomputed on every resize.
+    // Recompute the full-map framing (the zoom-out limit) on every resize.
     const portrait = w < h * 0.9;
     {
       // Frame the whole map, leaving room for the side dock (desktop) or the bottom sheet (phone).
@@ -303,11 +304,14 @@ export class Renderer {
       const usableH = portrait ? 0.55 : 0.9;
       const needH = (H * 1.02) / (2 * Math.tan(vfov / 2) * usableH);
       const needW = (W * 1.05) / (2 * Math.tan(hfov / 2) * usableW);
-      this.view.dist = Math.max(needH, needW);
-      const visH = 2 * this.view.dist * Math.tan(vfov / 2);
-      this.view.target.set(W / 2 + (portrait ? 0 : this.view.dist * Math.tan(hfov / 2) * (1 - usableW)), 0,
+      const dist = Math.max(needH, needW);
+      const visH = 2 * dist * Math.tan(vfov / 2);
+      const target = new THREE.Vector3(W / 2 + (portrait ? 0 : dist * Math.tan(hfov / 2) * (1 - usableW)), 0,
         H / 2 + (portrait ? visH * (0.5 - 0.36) : -visH * 0.02));
-      this.view.minDist = this.view.maxDist = this.view.dist; // fixed board
+      // Fully zoomed out = this framing. Zoom in down to ~30%; panning stays inside it.
+      this.fit = { dist, target, tanH: Math.tan(hfov / 2), tanV: Math.tan(vfov / 2) };
+      this.view.maxDist = dist; this.view.minDist = dist * 0.3;
+      if (!this.fitted) { this.view.dist = dist; this.view.target.copy(target); this.fitted = true; }
     }
     this.camera.updateProjectionMatrix();
   }
@@ -315,8 +319,11 @@ export class Renderer {
   updateCamera() {
     const v = this.view;
     v.dist = THREE.MathUtils.clamp(v.dist, v.minDist, v.maxDist);
-    v.target.x = THREE.MathUtils.clamp(v.target.x, -4, this.game.grid.w + 4);
-    v.target.z = THREE.MathUtils.clamp(v.target.z, -4, this.game.grid.h + 4);
+    // Keep the view inside the full-map framing: the closer you zoom, the more you can pan.
+    const f = this.fit;
+    const slackX = (f.dist - v.dist) * f.tanH, slackZ = (f.dist - v.dist) * f.tanV;
+    v.target.x = THREE.MathUtils.clamp(v.target.x, f.target.x - slackX, f.target.x + slackX);
+    v.target.z = THREE.MathUtils.clamp(v.target.z, f.target.z - slackZ, f.target.z + slackZ);
     const cp = Math.cos(v.pitch), sp = Math.sin(v.pitch);
     this.camera.position.set(v.target.x + Math.sin(v.yaw) * cp * v.dist, sp * v.dist, v.target.z + Math.cos(v.yaw) * cp * v.dist);
     this.camera.lookAt(v.target);
@@ -374,7 +381,7 @@ export class Renderer {
     if (e.kind === 'rock') {
       const m = new THREE.Mesh(this.rockGeos[e.uid % this.rockGeos.length], this.rockMat);
       m.position.y = 0.35; m.rotation.y = e.uid * 1.7; m.castShadow = m.receiveShadow = true;
-      m.scale.setScalar(1.2);
+      m.scale.setScalar(1.4);
       grp.add(m);
       grp.userData = { kind: 'rock', defId: null };
       return grp;

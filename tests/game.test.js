@@ -27,7 +27,7 @@ test('all recipe ingredients exist', () => {
 
 test('round flow: place 5, keep one, wave runs and ends', () => {
   const g = new Game();
-  const spots = [[40, 20], [42, 20], [44, 20], [46, 20], [48, 20]];
+  const spots = [[41, 21], [43, 21], [45, 21], [47, 21], [49, 21]];
   for (const [x, y] of spots) assert.ok(g.place(x, y, 'D1'));
   assert.equal(g.phase, 'choose');
   const first = g.pending[0];
@@ -44,11 +44,18 @@ test('round flow: place 5, keep one, wave runs and ends', () => {
 test('special recipe from round gems', () => {
   const g = new Game();
   const ids = ['B1', 'Y1', 'D1', 'R1', 'R1'];
-  ids.forEach((id, i) => g.place(40 + 2 * i, 20, id));
+  ids.forEach((id, i) => g.place(41 + 2 * i, 21, id));
   const sel = g.pending[0];
   const opts = g.specialOptions(sel);
   assert.ok(opts.some((o) => o.result === 'silver'));
   g.special(sel, 'silver');
   assert.equal(g.entities.get(sel).def.id, 'silver');
   assert.equal([...g.entities.values()].filter((e) => e.kind === 'rock').length, 4);
+});
+
+test('stones snap to the 2x2 build grid', () => {
+  const g = new Game();
+  assert.equal(g.canPlace(40, 21), false);
+  assert.equal(g.canPlace(41, 20), false);
+  assert.equal(g.canPlace(41, 21), true);
 });
