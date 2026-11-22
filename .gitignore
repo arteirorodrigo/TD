@@ -3,3 +3,4 @@ dist/
 dist-artifact/
 .auditoria-trabalho/
 docs/referencias/*.glb
+docs/referencias/*.obj
