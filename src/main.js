@@ -344,4 +344,5 @@ function loop(now) {
 start();
 window.__game = () => game; // handy for debugging in the console
 window.__view = () => view;
+window.__towers = TOWERS;
 requestAnimationFrame(loop);

@@ -1,0 +1,119 @@
+NINHO DOS DRAGÕES - LISTA PARA ILUSTRAÇÃO
+
+ESCAMAS (BASES)
+8 elementos x 6 qualidades
+
+Elementos: Gelo, Aço, Etérea, Veneno, Sombra, Tempestade, Fogo, Solar
+Qualidades (da pior para a melhor): Partida, Pequena, Comum, Lustrosa, Perfeita, Ancestral
+
+Escama de Gelo
+  - Escama de Gelo Partida
+  - Escama de Gelo Pequena
+  - Escama de Gelo Comum
+  - Escama de Gelo Lustrosa
+  - Escama de Gelo Perfeita
+  - Escama de Gelo Ancestral
+
+Escama de Aço
+  - Escama de Aço Partida
+  - Escama de Aço Pequena
+  - Escama de Aço Comum
+  - Escama de Aço Lustrosa
+  - Escama de Aço Perfeita
+  - Escama de Aço Ancestral
+
+Escama de Etérea
+  - Escama de Etérea Partida
+  - Escama de Etérea Pequena
+  - Escama de Etérea Comum
+  - Escama de Etérea Lustrosa
+  - Escama de Etérea Perfeita
+  - Escama de Etérea Ancestral
+
+Escama de Veneno
+  - Escama de Veneno Partida
+  - Escama de Veneno Pequena
+  - Escama de Veneno Comum
+  - Escama de Veneno Lustrosa
+  - Escama de Veneno Perfeita
+  - Escama de Veneno Ancestral
+
+Escama de Sombra
+  - Escama de Sombra Partida
+  - Escama de Sombra Pequena
+  - Escama de Sombra Comum
+  - Escama de Sombra Lustrosa
+  - Escama de Sombra Perfeita
+  - Escama de Sombra Ancestral
+
+Escama de Tempestade
+  - Escama de Tempestade Partida
+  - Escama de Tempestade Pequena
+  - Escama de Tempestade Comum
+  - Escama de Tempestade Lustrosa
+  - Escama de Tempestade Perfeita
+  - Escama de Tempestade Ancestral
+
+Escama de Fogo
+  - Escama de Fogo Partida
+  - Escama de Fogo Pequena
+  - Escama de Fogo Comum
+  - Escama de Fogo Lustrosa
+  - Escama de Fogo Perfeita
+  - Escama de Fogo Ancestral
+
+Escama de Solar
+  - Escama de Solar Partida
+  - Escama de Solar Pequena
+  - Escama de Solar Comum
+  - Escama de Solar Lustrosa
+  - Escama de Solar Perfeita
+  - Escama de Solar Ancestral
+
+DRAGÕES (ESPECIAIS)
+
+01. Dragonete Prateado
+02. Wyrm Prateado
+03. Dragão Cristalino
+04. Grande Dragão Cristalino
+05. Rei Dragão de Cristal
+06. Hidra Jovem
+07. Hidra de Cinco Cabeças
+08. Hidra Radiante
+09. Hidra Primordial
+10. Hidra Infinita
+11. Salamandra
+12. Dragão Vulcânico
+13. Dragão Trovejante
+14. Dragão Trovejante Ancião
+15. Imperador Escarlate
+16. Serpe de Jade
+17. Wyvern Caçadora
+18. Serpe Vigia
+19. Dragão Oráculo
+20. Dragão Celestial
+21. Dragão da Sorte
+22. Wyvern Azul
+23. Wyvern Rainha Dourada
+24. Dragão de Ouro
+25. Dragão Tesoureiro
+26. Dragão do Pântano
+27. Dragão Golem
+28. Dragão das Marés
+29. Leviatã
+30. Leviatã Ancestral
+31. Dragão Perolado
+32. Dragão Inspirador
+33. Dragão Coral
+34. Dragão Ladrão
+35. Rainha dos Dragões
+36. Dragão da Nevasca
+37. Dragão Glacial do Norte
+38. Dragão Estelar de Gelo
+
+Secretos:
+- Dragão de Obsidiana
+- Dragão de Ágata
+- Dragão da Tormenta
+- Devorador de Céus
+- Dragão Infernal
