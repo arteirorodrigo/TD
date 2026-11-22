@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game, DIFFICULTIES } from '../src/game.js';
 import { Grid } from '../src/map.js';
-import { waveFor, bountyFor } from '../src/data/enemies.js';
+import { waveFor, bountyFor, baseLevelOf, ENEMY_TYPES } from '../src/data/enemies.js';
 import { getRecords, submitRecord, bestOverall, getMazes, saveMaze, deleteMaze } from '../src/records.js';
 import { bookLines, SECRET_IDS } from '../src/book.js';
 import { TOWERS, RECIPES, CELL, tierTag, tierLabel } from '../src/data/towers.js';
@@ -129,24 +129,38 @@ test('heal never exceeds the difficulty max', () => {
   assert.equal(m.lives, 8);
 });
 
-test('wave 51 repeats wave 1 three times stronger', () => {
-  const a = waveFor(1)[0], b = waveFor(51)[0];
+test('wave 51 repeats wave 26 three times stronger', () => {
+  const a = waveFor(26)[0], b = waveFor(51)[0];
   assert.equal(b.name, a.name);
   assert.equal(b.hp, a.hp * 3);
   assert.equal(b.armor, a.armor + 5);
   assert.equal(b.cycle, 1);
   assert.equal(a.cycle, 0);
+  assert.equal(baseLevelOf(51), 26);
 });
 
-test('wave 100 is the cycle-1 boss, wave 101 is cycle 2', () => {
-  assert.ok(waveFor(100)[0].boss);
-  assert.equal(waveFor(100)[0].cycle, 1);
-  assert.equal(waveFor(101)[0].cycle, 2);
-  assert.equal(waveFor(101)[0].hp, waveFor(1)[0].hp * 9);
+test('wave 75 is the cycle-1 final boss, wave 76 starts cycle 2 at 26', () => {
+  assert.ok(waveFor(75)[0].boss);
+  assert.equal(baseLevelOf(75), 50);
+  assert.equal(waveFor(75)[0].cycle, 1);
+  assert.equal(baseLevelOf(76), 26);
+  assert.equal(waveFor(76)[0].cycle, 2);
+  assert.equal(waveFor(76)[0].hp, waveFor(26)[0].hp * 9);
+  assert.equal(baseLevelOf(100), 50);
+  assert.equal(baseLevelOf(101), 26);
+});
+
+test('bosses 20 and 30 have double life, boss 50 has ten times', () => {
+  const raw = (lv) => ENEMY_TYPES.find((e) => e.level === lv && e.boss).hp;
+  assert.equal(waveFor(10)[0].hp, raw(10));
+  assert.equal(waveFor(20)[0].hp, raw(20) * 2);
+  assert.equal(waveFor(30)[0].hp, raw(30) * 2);
+  assert.equal(waveFor(50)[0].hp, raw(50) * 10);
+  assert.equal(waveFor(75)[0].hp, raw(50) * 10 * 3);
 });
 
 test('bounty scales with cycle', () => {
-  assert.equal(bountyFor(waveFor(51)[0]), 2 * bountyFor(waveFor(1)[0]));
+  assert.equal(bountyFor(waveFor(51)[0]), 2 * bountyFor(waveFor(26)[0]));
 });
 
 test('game keeps going after wave 50', () => {

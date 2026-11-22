@@ -85,14 +85,20 @@ export const ENEMY_TYPES = RAW.map(([level, name, hp, speed, armor, mr, air, bos
 }));
 
 // Wave composition (tunable): 10 units per normal level split between variants, 1 for bosses.
-// Endless: after MAX_LEVEL the 50 waves repeat; each cycle c multiplies hp by 3^c and adds 5*c armor.
+// Endless: after MAX_LEVEL the waves 26–50 repeat; each cycle c multiplies hp by 3^c,
+// adds 5*c armor and multiplies gold by (1 + c).
 export const UNITS_PER_WAVE = 10;
-export const cycleOf = (level) => Math.floor((level - 1) / MAX_LEVEL);
+export const REPEAT_FROM = 26;
+const REPEAT_LEN = MAX_LEVEL - REPEAT_FROM + 1;
+export const cycleOf = (level) => (level <= MAX_LEVEL ? 0 : 1 + Math.floor((level - MAX_LEVEL - 1) / REPEAT_LEN));
+export const baseLevelOf = (level) => (level <= MAX_LEVEL ? level : REPEAT_FROM + ((level - MAX_LEVEL - 1) % REPEAT_LEN));
+// Bosses 20 and 30 got too easy; the final boss is the real test.
+export const BOSS_HP_MULT = { 20: 2, 30: 2, 50: 10 };
 export function waveFor(level) {
   const c = cycleOf(level);
-  const base = level - c * MAX_LEVEL;
+  const base = baseLevelOf(level);
   const types = ENEMY_TYPES.filter((e) => e.level === base)
-    .map((t) => ({ ...t, hp: t.hp * 3 ** c, armor: t.armor + 5 * c, cycle: c }));
+    .map((t) => ({ ...t, hp: t.hp * (t.boss ? BOSS_HP_MULT[t.level] || 1 : 1) * 3 ** c, armor: t.armor + 5 * c, cycle: c }));
   const units = [];
   if (types.some((t) => t.boss)) {
     units.push(types.find((t) => t.boss));
