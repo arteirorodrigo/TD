@@ -4,6 +4,7 @@ import { Game, DIFFICULTIES } from '../src/game.js';
 import { Grid } from '../src/map.js';
 import { waveFor, bountyFor } from '../src/data/enemies.js';
 import { getRecords, submitRecord, bestOverall } from '../src/records.js';
+import { bookLines, SECRET_IDS } from '../src/book.js';
 import { TOWERS, RECIPES, CELL, tierTag, tierLabel } from '../src/data/towers.js';
 
 test('initial path exists through all waypoints', () => {
@@ -218,4 +219,19 @@ test('roundCombos ignores recipes made only of old towers', () => {
   g.entities.set(902, { uid: 902, x: 9, y: 1, kind: 'gem', def: TOWERS.D1, pending: false });
   g.place(41, 21, 'G2');
   assert.equal(g.roundCombos().some((c) => c.result === 'silver'), false);
+});
+
+test('book groups every non-secret dragon into exactly one of 8 element lines', () => {
+  const lines = bookLines();
+  assert.equal(lines.length, 8);
+  const seen = lines.flatMap((l) => l.tiers.flat());
+  const specials = Object.values(TOWERS).filter((t) => !t.base && !SECRET_IDS.includes(t.id)).map((t) => t.id);
+  assert.equal(seen.length, specials.length);
+  assert.deepEqual(new Set(seen), new Set(specials));
+  const fire = lines.find((l) => l.final === 'crownPrince');
+  assert.equal(fire.element, 'R');
+  assert.deepEqual(fire.tiers[0], ['asteriatedRuby']);
+  assert.ok(fire.tiers[1].includes('volcano'));
+  assert.deepEqual(fire.tiers[3], ['crownPrince']);
+  assert.equal(SECRET_IDS.length, 5);
 });

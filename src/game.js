@@ -230,6 +230,7 @@ export class Game {
     }
     this.pending = [];
     this.fx.push({ t: 'upgrade', x: keep.x, y: keep.y, color: keep.def.color });
+    if (!keep.def.base) this.emit('hatch', keep.def.id);
     this.startWave();
   }
 

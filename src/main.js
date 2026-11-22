@@ -3,7 +3,8 @@ import { Renderer } from './render.js';
 import { TOWERS, QUALITIES, CELL, abilityText, tierTag, tierLabel } from './data/towers.js';
 import { waveFor, HP_MULT, SPEED_MULT, ABILITY_TEXT } from './data/enemies.js';
 import { initMenu, showMenu, hideScreens, screensOpen } from './menu.js';
-import { submitRecord } from './records.js';
+import { submitRecord, getDiscovered, markDiscovered } from './records.js';
+import { bookLines, SECRET_IDS } from './book.js';
 
 const $ = (id) => document.getElementById(id);
 const hex = (c) => '#' + c.toString(16).padStart(6, '0');
@@ -24,6 +25,9 @@ function start(difficulty = 'medio') {
   game.on((type) => {
     if (type === 'change') { view.refreshCells(); renderUI(); }
     if (type === 'over') showEnd();
+  });
+  game.on((type, id) => {
+    if (type === 'hatch') markDiscovered(store(), id);
   });
   selectedUid = null; selectedEnemyUid = null;
   view.refreshCells();
@@ -227,19 +231,27 @@ function selectEnemy(uid) { selectedUid = null; selectedEnemyUid = uid; renderSe
 function showRecipes({ inGame = true } = {}) {
   const have = new Map();
   if (inGame) for (const e of game.entities.values()) if (e.kind === 'gem') have.set(e.def.id, (have.get(e.def.id) || 0) + 1);
-  const specials = Object.values(TOWERS).filter((t) => !t.base);
-  const card = (t) => {
-    const recipes = [t.recipe, t.alt].filter(Boolean);
-    const ready = recipes.some((r) => { const c = new Map(have); return r.every((i) => { const n = c.get(i) || 0; c.set(i, n - 1); return n > 0; }); });
-    return `<div class="recipe ${ready ? 'ready' : ''}"><b><span class="swatch" style="color:${hex(t.color)};background:${hex(t.color)}"></span>${t.name}</b>
-      <div class="muted" style="font-size:12px">Dano ${fmt(t.dmg)} · ${t.rate}s · ${t.range >= 5000 ? 'mapa todo' : (t.range / CELL).toFixed(1).replace('.', ',') + ' q'}</div>
-      ${recipes.map((r, i) => `<div>${i ? '<span class="muted" style="font-size:12px">ou </span>' : ''}${r.map((id) => `<span class="ing ${have.get(id) ? 'have' : ''}">${TOWERS[id].name}</span>`).join('')}</div>`).join('')}
-      <div class="muted" style="font-size:12px;margin-top:4px">${t.abilities.map(abilityText).join(' · ')}</div></div>`;
+  const seen = getDiscovered(store());
+  const ready = (t) => [t.recipe, t.alt].filter(Boolean).some((r) => { const c = new Map(have); return r.every((i) => { const n = c.get(i) || 0; c.set(i, n - 1); return n > 0; }); });
+  const ing = (id) => {
+    const t = TOWERS[id];
+    return `<span class="ing ${have.get(id) ? 'have' : ''}">${t.base ? `${t.name.replace('Escama de ', '')} · ${tierTag(t.quality)}` : t.name}</span>`;
   };
-  $('modal-body').className = 'sheet' + (inGame ? '' : ' parch');
+  const card = (t, { branch = false } = {}) => `<div class="recipe ${ready(t) ? 'ready' : ''} ${branch ? 'branch' : ''}">
+      <b><span class="swatch" style="color:${hex(t.color)};background:${hex(t.color)}"></span>${t.name}</b>${branch ? '<span class="tag">Ramo</span>' : ''}
+      <div>${t.recipe.map(ing).join('')}</div>
+      ${t.alt ? `<div><span class="muted" style="font-size:12px">ou </span>${t.alt.map(ing).join('')}</div>` : ''}
+      <div class="muted" style="font-size:12px;margin-top:4px">${t.abilities.map(abilityText).join(' · ')}</div></div>`;
+  const lines = bookLines().map((l) => `<section class="line">
+      <h3><span class="swatch" style="color:${hex(TOWERS[l.final].color)};background:${hex(TOWERS[l.final].color)}"></span>${l.name}</h3>
+      <div class="line-grid">${l.tiers.map((ids, i) => `<div class="tier-col"><div class="tier-h">Estágio ${i + 1}</div>${ids.map((id) => card(TOWERS[id], { branch: !l.mainPath.has(id) })).join('') || '<div class="muted tier-empty">—</div>'}</div>`).join('')}</div>
+    </section>`).join('');
+  const secrets = SECRET_IDS.map((id) => seen.has(id) ? card(TOWERS[id]) : `<div class="recipe secret"><b>???</b><div class="muted" style="font-size:12px">Dragão secreto. Descubra a receita para revelar.</div></div>`).join('');
+  $('modal-body').className = 'sheet book' + (inGame ? '' : ' parch');
   $('modal-body').innerHTML = `<div class="row" style="justify-content:space-between;align-items:center"><h2>${inGame ? 'Dragões' : 'Livro dos Dragões'}</h2><button class="btn" id="close-modal">Fechar</button></div>
-    <p class="hint">Cada dragão nasce de uma combinação de escamas. Na fase de escolha, selecione uma escama da receita para chocar o dragão.${inGame ? ' Ingredientes em destaque já estão no mapa.' : ''}</p>
-    <div class="recipes">${specials.map(card).join('')}</div>`;
+    <p class="hint">8 linhas de evolução, uma por elemento: cada estágio nasce do anterior mais algumas escamas. "Ramo" é um dragão que sai da linha mas não leva ao final.${inGame ? ' Ingredientes em destaque já estão no mapa.' : ''}</p>
+    ${lines}
+    <section class="line"><h3>Dragões secretos</h3><div class="secret-grid">${secrets}</div></section>`;
   $('modal').hidden = false;
   $('close-modal').onclick = () => ($('modal').hidden = true);
 }

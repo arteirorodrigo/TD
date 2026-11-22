@@ -30,3 +30,15 @@ export function bestOverall(storage) {
   }
   return best;
 }
+
+// Dragons hatched at least once on this device (unlocks secret dragons in the book).
+const SEEN_KEY = 'ninho.livro.v1';
+export function getDiscovered(storage) {
+  try { const v = JSON.parse(storage?.getItem(SEEN_KEY) || '[]'); return new Set(Array.isArray(v) ? v : []); } catch { return new Set(); }
+}
+export function markDiscovered(storage, id) {
+  const seen = getDiscovered(storage);
+  if (seen.has(id)) return;
+  seen.add(id);
+  try { storage?.setItem(SEEN_KEY, JSON.stringify([...seen])); } catch { /* not saved */ }
+}

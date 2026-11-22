@@ -152,6 +152,16 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .combo { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 13px; }
 .combo:first-child { border-top: 0; }
 .combo .btn { padding: 4px 10px; font-size: 12px; white-space: nowrap; }
+.sheet.book { width: min(1100px, 100%); }
+.line { margin-top: 18px; }
+.line h3 { font: 700 15px var(--font-display); letter-spacing: .06em; margin: 0 0 8px; text-transform: none; color: inherit; }
+.line-grid { display: grid; grid-template-columns: repeat(4, minmax(200px, 1fr)); gap: 8px; overflow-x: auto; }
+.tier-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.tier-h { font: 600 10px var(--font-body); letter-spacing: .12em; text-transform: uppercase; opacity: .7; }
+.tier-empty { padding: 10px; text-align: center; }
+.recipe.branch { border-style: dashed; opacity: .9; }
+.recipe.secret { border-style: dashed; text-align: center; }
+.secret-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
 .end-actions { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
 .new-record { color: var(--gold); font: 700 15px var(--font-display); letter-spacing: .1em; }
 @media (max-height: 420px) { .screen .tagline, #scr-menu .kick { display: none; } .screen h1 { font-size: 26px; } .screen .rule { margin: 4px auto; } .screen .art { width: 74px; }
