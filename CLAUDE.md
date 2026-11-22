@@ -1,4 +1,6 @@
-# Ninho dos Dragões (TD-DragonScale)
+# O Covil dos Dragões TD (TD-DragonScale)
+
+Nome do jogo (decidido em 22/11): **O Covil dos Dragões TD** em português e **Dragons Lair TD** em inglês (antigo: Ninho dos Dragões).
 
 Tower defense de dragões no navegador (Three.js + Vite). Destino final: Play Store e outras lojas; o navegador é só para testar.
 O dono não é programador: fale em português simples, sem termos técnicos, e mostre fotos (prints) antes de decidir algo visual.

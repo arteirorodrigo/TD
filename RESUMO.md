@@ -1,6 +1,6 @@
-# Resumo do projeto: Ninho dos Dragões
+# Resumo do projeto: O Covil dos Dragões TD
 
-Nova versão, com gráficos atuais, do Gem Tower Defense (https://www.gemtowerdefense.com/). A mecânica é a mesma do original e o tema mudou para dragões. O nome "Ninho dos Dragões" ainda é provisório.
+Nova versão, com gráficos atuais, do Gem Tower Defense (https://www.gemtowerdefense.com/). A mecânica é a mesma do original e o tema mudou para dragões. Nome: "O Covil dos Dragões TD" (inglês: "Dragons Lair TD"); antes se chamava "Ninho dos Dragões".
 
 Jogável no navegador: https://claude.ai/artifact/9efNqw66myyqXt5FRsx4jk
 
