@@ -14,8 +14,8 @@ Os auditores leem este arquivo antes de toda auditoria. O que está em "Não gos
 
 ## Aprovadas, a fazer (2ª auditoria, 22/11 — ver `2026-11-22-2-*.md`)
 - **Design 1, com a versão do dono:** a trilha vermelha passa a ser o caminho real (muda quando a pedra entra). No leque (menu redondo) há um botão para mostrar ou esconder a trilha.
-- Design 2 (Manter sempre visível no celular deitado), design 3 (peças legíveis, junto com jogabilidade 3), design 5 (sentir a vida perdida).
-- Jogabilidade 3 (jogo mais leve no celular), jogabilidade 5 (poder do Perolado e do Ladrão), e os 5 pequenos erros.
+- Feitas (ramo `auditoria-2`): design 1 (versão do dono), design 2, design 5, jogabilidade 5 e os pequenos erros.
+- **Adiadas pelo dono (22/11):** design 3 (peças legíveis) e jogabilidade 3 (jogo mais leve no celular). Foram montadas 3 ideias de visual (fotos em `2026-11-22-2-pecas-3-ideias.png` e `2026-11-22-2-pecas-celular.png`: 1 blocos, 2 tinta e lacre, 3 muralha); o dono preferiu manter o visual atual por enquanto. Não insistir; voltar só quando ele pedir.
 
 ## Guardadas para ajustar depois
 O dono quer guardar e ajustar mais tarde: ver `ideias-guardadas.md` (chefe 50, Valquíria, sorte 9 e 10).

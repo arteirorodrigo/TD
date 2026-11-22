@@ -20,16 +20,6 @@ import { prepareDragonGeometry, stripWings, wingGeometry, buildHybridDragon } fr
 // 'escultura' = sculpted model alone (wings can't move); 'padrao' = original
 // procedural dragon (also tagged in git as "modelo-padrao"). Change here to switch back.
 const DRAGON_MODEL = 'padrao';
-// Teste de visual das peças (2ª auditoria, design 3): ?pecas=1, 2 ou 3. 0 = visual atual.
-const PECAS = (() => { try { return +(new URLSearchParams(location.search).get('pecas') || 0); } catch { return 0; } })();
-function hatchTexture() {
-  const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
-  x.fillStyle = '#4a2e18'; x.fillRect(0, 0, 128, 128);
-  x.strokeStyle = 'rgba(235, 205, 150, .35)'; x.lineWidth = 3;
-  for (let i = -128; i < 256; i += 14) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 128, 128); x.stroke(); }
-  x.strokeStyle = '#1e1008'; x.lineWidth = 10; x.strokeRect(5, 5, 118, 118);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
 // The map is seen from above, so the sculpted dragon leans toward the camera (like a figure on a board) to show
 // its silhouette; it turns left/right around its own up axis to face targets.
 const DRAGON_TILT = -Math.PI / 2.4;
@@ -166,7 +156,7 @@ const GROUND_VERT = /* glsl */`
 varying vec2 vUv; varying vec3 vWorld;
 void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
 const GROUND_FRAG = /* glsl */`
-uniform sampler2D uCells; uniform sampler2D uGrass; uniform vec2 uSize; uniform float uTime; uniform float uGrid; uniform vec4 uHover; uniform vec3 uHoverColor; uniform float uParch; uniform float uMargin; uniform float uDim;
+uniform sampler2D uCells; uniform sampler2D uGrass; uniform vec2 uSize; uniform float uTime; uniform float uGrid; uniform vec4 uHover; uniform vec3 uHoverColor; uniform float uParch; uniform float uMargin;
 varying vec2 vUv; varying vec3 vWorld;
 float gridLine(vec2 p, float w){ vec2 g = abs(fract(p - .5) - .5) / fwidth(p); return 1. - min(min(g.x, g.y) / w, 1.); }
 void main(){
@@ -182,7 +172,6 @@ void main(){
   vec3 grass = texture2D(uGrass, vec2(tuv.x, 1. - tuv.y)).rgb;
   float onPaper = step(0., tuv.x) * step(0., tuv.y) * step(tuv.x, 1.) * step(tuv.y, 1.);
   base = mix(base, grass * (uParch > .5 ? mix(1., .9, uGrid * inside) : mix(.72, .62, uGrid)), uMargin > 0. ? onPaper : inside); // clearer ground while the grid is hidden
-  base = mix(base, mix(base, vec3(dot(base, vec3(.3,.59,.11))) * 1.08, .5), uDim * inside); // drawing a bit quieter inside the play area
   float fine = gridLine(p, 1.0) * .025 * uGrid * inside;
   float major = gridLine((p - 1.) / 2., 1.2) * .2 * uGrid * inside; // build cells: 2x2, starting on odd squares
   vec3 col = base + vec3(.55,.42,.30) * (fine + major);
@@ -246,7 +235,7 @@ export class Renderer {
     this.cellTex.magFilter = this.cellTex.minFilter = THREE.NearestFilter;
     this.groundMat = new THREE.ShaderMaterial({
       vertexShader: GROUND_VERT, fragmentShader: GROUND_FRAG,
-      uniforms: { uCells: { value: this.cellTex }, uGrass: { value: MAPA_IMAGEM ? (() => { const t = new THREE.TextureLoader().load(MAPA_IMAGEM); t.anisotropy = 8; return t; })() : MAP_STYLE ? (() => { const t = new THREE.CanvasTexture(makeParchmentCanvas()); t.anisotropy = 8; return t; })() : new THREE.TextureLoader().load(grassUrl) }, uParch: { value: MAP_STYLE ? 1 : 0 }, uDim: { value: PECAS ? 0.3 : 0 }, uMargin: { value: MARGIN }, uSize: { value: new THREE.Vector2(W, H) }, uTime: { value: 0 }, uGrid: { value: 1 },
+      uniforms: { uCells: { value: this.cellTex }, uGrass: { value: MAPA_IMAGEM ? (() => { const t = new THREE.TextureLoader().load(MAPA_IMAGEM); t.anisotropy = 8; return t; })() : MAP_STYLE ? (() => { const t = new THREE.CanvasTexture(makeParchmentCanvas()); t.anisotropy = 8; return t; })() : new THREE.TextureLoader().load(grassUrl) }, uParch: { value: MAP_STYLE ? 1 : 0 }, uMargin: { value: MARGIN }, uSize: { value: new THREE.Vector2(W, H) }, uTime: { value: 0 }, uGrid: { value: 1 },
         uHover: { value: new THREE.Vector4(0, 0, 0, 0) }, uHoverColor: { value: new THREE.Color(0x3cff9a) } },
       extensions: { derivatives: true },
     });
@@ -398,23 +387,6 @@ export class Renderer {
     g.setIndex(idx);
     this.trail.geometry.dispose(); this.trail.geometry = g;
   }
-  pecasRes() {
-    if (this._pecas) return this._pecas;
-    const r = this._pecas = {
-      inkMat: new THREE.MeshBasicMaterial({ color: 0x24140a }),
-      lightMat: new THREE.MeshBasicMaterial({ color: 0xfff3d6 }),
-      shadowMat: new THREE.MeshBasicMaterial({ color: 0x1a0e06, transparent: true, opacity: 0.55, depthWrite: false }),
-      redShadowMat: new THREE.MeshBasicMaterial({ color: 0x6a0f08, transparent: true, opacity: 0.6, depthWrite: false }),
-      plateGeo: new THREE.BoxGeometry(2, 0.06, 2), blockGeo: new THREE.BoxGeometry(1.62, 0.55, 1.62),
-      blockMat: new THREE.MeshStandardMaterial({ color: 0x8c8172, roughness: 0.9, flatShading: true }),
-      tileGeo: new THREE.BoxGeometry(2, 0.08, 2), hatchMat: new THREE.MeshBasicMaterial({ map: hatchTexture() }),
-      wallGeo: new THREE.BoxGeometry(2, 1.1, 2), wallMat: new THREE.MeshStandardMaterial({ color: 0x4e3a28, roughness: 0.95 }),
-      wallTopGeo: new THREE.PlaneGeometry(2, 2), wallTopMat: new THREE.MeshBasicMaterial({ color: 0x6a4e34 }),
-      waxGeo: new THREE.CylinderGeometry(0.92, 0.96, 0.14, 11), hexGeo: new THREE.CylinderGeometry(0.95, 0.95, 0.08, 6),
-    };
-    for (const g of [r.plateGeo, r.blockGeo, r.tileGeo, r.wallGeo, r.wallTopGeo, r.waxGeo, r.hexGeo]) this.sharedGeos.add(g);
-    return r;
-  }
   setTrailVisible(on) { this.trailOn = on; if (this.trail) this.trail.visible = on; }
 
   resize() {
@@ -527,20 +499,6 @@ export class Renderer {
   makeEntityMesh(e) {
     const grp = new THREE.Group();
     grp.position.set(e.x + 1, 0, e.y + 1);
-    if (e.kind === 'rock' && PECAS) {
-      const P = this.pecasRes();
-      if (PECAS === 1) { // bloco de pedra com contorno escuro
-        const plate = new THREE.Mesh(P.plateGeo, P.inkMat); plate.position.y = 0.03; grp.add(plate);
-        const m = new THREE.Mesh(P.blockGeo, P.blockMat); m.position.y = 0.3; m.castShadow = m.receiveShadow = true; grp.add(m);
-      } else if (PECAS === 2) { // ladrilho de tinta riscado, como num mapa desenhado
-        const m = new THREE.Mesh(P.tileGeo, P.hatchMat); m.position.y = 0.06; m.receiveShadow = true; grp.add(m);
-      } else { // muralha: blocos altos que se encostam e viram parede
-        const m = new THREE.Mesh(P.wallGeo, P.wallMat); m.position.y = 0.55; m.castShadow = m.receiveShadow = true; grp.add(m);
-        const top = new THREE.Mesh(P.wallTopGeo, P.wallTopMat); top.position.y = 1.11; top.rotation.x = -Math.PI / 2; grp.add(top);
-      }
-      grp.userData = { kind: 'rock', defId: null };
-      return grp;
-    }
     if (e.kind === 'rock') {
       const m = new THREE.Mesh(this.rockGeos[e.uid % this.rockGeos.length], this.rockMat);
       m.position.y = 0.35; m.rotation.y = e.uid * 1.7; m.castShadow = m.receiveShadow = true;
@@ -606,24 +564,9 @@ export class Renderer {
       grp.add(glow);
     }
     grp.add(tilt || gem);
-    if (def.base && PECAS) {
-      const P = this.pecasRes();
-      gem.scale.multiplyScalar(0.7);
-      const c = new THREE.Color(def.color);
-      if (PECAS === 1) { // selo redondo da cor do elemento, contorno escuro
-        const rim = new THREE.Mesh(this.discGeo, P.inkMat); rim.rotation.x = -Math.PI / 2; rim.position.y = 0.04; rim.scale.setScalar(1.0); grp.add(rim);
-        const disc = new THREE.Mesh(this.discGeo, new THREE.MeshBasicMaterial({ color: c })); disc.rotation.x = -Math.PI / 2; disc.position.y = 0.05; disc.scale.setScalar(0.84); grp.add(disc);
-      } else if (PECAS === 2) { // lacre de cera: grosso, cor escurecida, borda irregular
-        const wax = new THREE.Mesh(P.waxGeo, new THREE.MeshStandardMaterial({ color: c.clone().multiplyScalar(0.75), roughness: 0.35, metalness: 0.05 }));
-        wax.position.y = 0.09; wax.castShadow = true; grp.add(wax);
-      } else { // ficha sextavada com borda clara
-        const edge = new THREE.Mesh(P.hexGeo, P.lightMat); edge.position.y = 0.06; edge.scale.set(1.08, 1, 1.08); grp.add(edge);
-        const hex = new THREE.Mesh(P.hexGeo, new THREE.MeshBasicMaterial({ color: c })); hex.position.y = 0.09; grp.add(hex);
-      }
-    }
     // quality pips on pedestal
     if (def.base) {
-      for (let i = 0; i <= def.quality && !PECAS; i++) {
+      for (let i = 0; i <= def.quality; i++) {
         const pip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), new THREE.MeshBasicMaterial({ color: def.color }));
         const a = (i / 6) * Math.PI * 2;
         pip.position.set(Math.cos(a) * 0.72, 0.24, Math.sin(a) * 0.72);
@@ -724,13 +667,6 @@ export class Renderer {
     body.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     body.scale.multiplyScalar(scale);
     grp.add(body);
-    if (PECAS) { // marca no chão embaixo do inimigo, para ele se destacar no papel
-      const P = this.pecasRes();
-      const k = (t.boss ? 1.5 : 1) * 0.75;
-      if (PECAS === 3) { const ring = new THREE.Mesh(this.ringGeo, P.lightMat); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; ring.scale.setScalar(k); grp.add(ring); }
-      const d = new THREE.Mesh(this.discGeo, PECAS === 2 ? P.redShadowMat : P.shadowMat); d.rotation.x = -Math.PI / 2; d.position.y = 0.04; d.scale.setScalar(k * 0.92); grp.add(d);
-      if (t.boss) body.scale.multiplyScalar(1.3);
-    }
     // HP bar
     const barBg = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.3), new THREE.MeshBasicMaterial({ color: 0x0a0d12, transparent: true, opacity: 0.8, depthWrite: false }));
     const barFg = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.3), new THREE.MeshBasicMaterial({ color: 0x5dff8a, depthWrite: false }));
