@@ -391,6 +391,9 @@ export class Renderer {
 
   resize() {
     const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
+    // Minimizing the browser on a phone can report a 0-size screen: the framing math would divide by zero
+    // and leave the camera broken (map gone, taps ignored) even after coming back. Ignore that moment.
+    if (!(w > 0 && h > 0)) return;
     this.renderer.setSize(w, h, false);
     this.composer.setSize(w, h);
     this.bloom.setSize(w, h);
