@@ -179,7 +179,9 @@ export class Renderer {
     this.game = game;
     this.canvas = canvas;
     const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Phones: fewer pixels drawn (1.5 per CSS pixel) keeps long matches smooth.
+    const smallScreen = Math.min(window.innerWidth, window.innerHeight) < 600;
+    r.setPixelRatio(Math.min(window.devicePixelRatio, smallScreen ? 1.5 : 2));
     r.toneMapping = THREE.ACESFilmicToneMapping;
     r.toneMappingExposure = 1.05;
     r.shadowMap.enabled = true;
@@ -237,6 +239,10 @@ export class Renderer {
     this.pedestalMat = new THREE.MeshStandardMaterial({ color: 0x1b2230, roughness: 0.6, metalness: 0.4 });
     this.ringGeo = new THREE.RingGeometry(0.98, 1, 96);
     this.discGeo = new THREE.CircleGeometry(1, 64);
+    // Geometries shared by many meshes: never disposed with a single mesh.
+    this.sharedGeos = new Set([this.scaleGeo, ...this.rockGeos, this.pedestalGeo, this.ringGeo, this.discGeo]);
+    this.tmpQ = new THREE.Quaternion();
+    this.upAxis = new THREE.Vector3(0, 1, 0);
 
     this.meshes = new Map(); // entity uid -> group
     this.enemyMeshes = new Map();
@@ -493,7 +499,10 @@ export class Renderer {
 
   disposeGroup(g) {
     this.scene.remove(g);
-    g.traverse((o) => { if (o.material && o.material !== this.rockMat && o.material !== this.pedestalMat) o.material.dispose?.(); });
+    g.traverse((o) => {
+      if (o.material && o.material !== this.rockMat && o.material !== this.pedestalMat) o.material.dispose?.();
+      if (o.geometry && !this.sharedGeos.has(o.geometry)) o.geometry.dispose();
+    });
   }
 
   enemyMesh(en) {
@@ -600,7 +609,7 @@ export class Renderer {
       ud.bar.quaternion.copy(this.camera.quaternion);
       ud.bar.rotation.setFromQuaternion(this.camera.quaternion);
       // bar is child of rotated group: cancel parent yaw
-      ud.bar.quaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -m.rotation.y));
+      ud.bar.quaternion.premultiply(this.tmpQ.setFromAxisAngle(this.upAxis, -m.rotation.y));
     }
     for (const [uid, m] of this.enemyMeshes) if (!seen.has(uid)) { this.disposeGroup(m); this.enemyMeshes.delete(uid); }
   }
@@ -726,7 +735,7 @@ export class Renderer {
     const key = combos.map((c) => c.result + ':' + c.uids.join(',')).join('|');
     if (key === this.comboKey) return;
     this.comboKey = key;
-    if (this.comboGroup) { this.disposeGroup(this.comboGroup); this.comboGroup.traverse((o) => o.geometry?.dispose()); }
+    if (this.comboGroup) this.disposeGroup(this.comboGroup);
     this.comboGroup = new THREE.Group();
     this.comboMats = [];
     const center = (uid) => { const e = this.game.entities.get(uid); return e && new THREE.Vector3(e.x + 1, 0.9, e.y + 1); };
