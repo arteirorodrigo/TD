@@ -7,7 +7,8 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { CELL, tierTag } from './data/towers.js';
 import { AttackFx } from './attack-fx.js';
-import { MAP_STYLE, makeParchmentCanvas } from './parchment-map.js';
+import { MAP_STYLE, makeParchmentCanvas, mapMargin } from './parchment-map.js';
+const MARGIN = mapMargin();
 import grassUrl from './assets/mapa_gramado.jpg';
 import dragonModelUrl from './assets/dragoes/dragao-obj.glb?url';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -153,7 +154,7 @@ const GROUND_VERT = /* glsl */`
 varying vec2 vUv; varying vec3 vWorld;
 void main(){ vUv = uv; vec4 w = modelMatrix * vec4(position,1.); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
 const GROUND_FRAG = /* glsl */`
-uniform sampler2D uCells; uniform sampler2D uGrass; uniform vec2 uSize; uniform float uTime; uniform float uGrid; uniform vec4 uHover; uniform vec3 uHoverColor; uniform float uParch;
+uniform sampler2D uCells; uniform sampler2D uGrass; uniform vec2 uSize; uniform float uTime; uniform float uGrid; uniform vec4 uHover; uniform vec3 uHoverColor; uniform float uParch; uniform float uMargin;
 varying vec2 vUv; varying vec3 vWorld;
 float gridLine(vec2 p, float w){ vec2 g = abs(fract(p - .5) - .5) / fwidth(p); return 1. - min(min(g.x, g.y) / w, 1.); }
 void main(){
@@ -161,12 +162,16 @@ void main(){
   vec2 cell = floor(p);
   vec4 c = texture2D(uCells, (cell + .5) / uSize);
   float path = c.r, plat = c.g, block = c.b;
+  float inArea = step(0., p.x) * step(0., p.y) * step(p.x, uSize.x) * step(p.y, uSize.y);
+  path *= inArea; plat *= inArea; // outside the play area the cell texture would repeat its edge
   float inside = step(0., p.x) * step(0., p.y) * step(p.x, uSize.x) * step(p.y, uSize.y);
   vec3 base = mix(vec3(.15,.125,.11), vec3(.21,.18,.155), smoothstep(45., 0., length(p - uSize*.5)));
-  vec3 grass = texture2D(uGrass, vec2(p.x / uSize.x, 1. - p.y / uSize.y)).rgb;
-  base = mix(base, grass * (uParch > .5 ? mix(1., .9, uGrid) : mix(.72, .62, uGrid)), inside); // clearer ground while the grid is hidden
-  float fine = gridLine(p, 1.0) * .025 * uGrid;
-  float major = gridLine((p - 1.) / 2., 1.2) * .2 * uGrid; // build cells: 2x2, starting on odd squares
+  vec2 tuv = (p + uMargin) / (uSize + 2. * uMargin); // the parchment may be bigger than the play area
+  vec3 grass = texture2D(uGrass, vec2(tuv.x, 1. - tuv.y)).rgb;
+  float onPaper = step(0., tuv.x) * step(0., tuv.y) * step(tuv.x, 1.) * step(tuv.y, 1.);
+  base = mix(base, grass * (uParch > .5 ? mix(1., .9, uGrid * inside) : mix(.72, .62, uGrid)), uMargin > 0. ? onPaper : inside); // clearer ground while the grid is hidden
+  float fine = gridLine(p, 1.0) * .025 * uGrid * inside;
+  float major = gridLine((p - 1.) / 2., 1.2) * .2 * uGrid * inside; // build cells: 2x2, starting on odd squares
   vec3 col = base + vec3(.55,.42,.30) * (fine + major);
   // path glow with a slow flowing pulse
   float flow = .55 + .45 * sin((p.x + p.y) * .35 - uTime * 2.2);
@@ -178,11 +183,11 @@ void main(){
     vec2 q = p - uHover.xy; float bd = min(min(q.x, 2. - q.x), min(q.y, 2. - q.y));
     col = mix(col, uHoverColor, .35 + .5 * (1. - smoothstep(.05, .14, bd)));
   }
-  col = mix(vec3(.05,.045,.045), col, inside);
+  col = mix(vec3(.05,.045,.045), col, uMargin > 0. ? onPaper : inside);
   // border
   vec2 d = min(p, uSize - p);
   float edge = (1. - smoothstep(0., .15, min(d.x, d.y))) * inside;
-  col += vec3(.9,.55,.2) * edge * .6;
+  col += vec3(.9,.55,.2) * edge * (uMargin > 0. ? .35 : .6);
   // colours above are authored in sRGB; the composer works in linear space
   gl_FragColor = vec4(pow(col, vec3(2.2)), 1.);
 }`;
@@ -228,7 +233,7 @@ export class Renderer {
     this.cellTex.magFilter = this.cellTex.minFilter = THREE.NearestFilter;
     this.groundMat = new THREE.ShaderMaterial({
       vertexShader: GROUND_VERT, fragmentShader: GROUND_FRAG,
-      uniforms: { uCells: { value: this.cellTex }, uGrass: { value: MAP_STYLE ? (() => { const t = new THREE.CanvasTexture(makeParchmentCanvas()); t.anisotropy = 8; return t; })() : new THREE.TextureLoader().load(grassUrl) }, uParch: { value: MAP_STYLE ? 1 : 0 }, uSize: { value: new THREE.Vector2(W, H) }, uTime: { value: 0 }, uGrid: { value: 1 },
+      uniforms: { uCells: { value: this.cellTex }, uGrass: { value: MAP_STYLE ? (() => { const t = new THREE.CanvasTexture(makeParchmentCanvas()); t.anisotropy = 8; return t; })() : new THREE.TextureLoader().load(grassUrl) }, uParch: { value: MAP_STYLE ? 1 : 0 }, uMargin: { value: MARGIN }, uSize: { value: new THREE.Vector2(W, H) }, uTime: { value: 0 }, uGrid: { value: 1 },
         uHover: { value: new THREE.Vector4(0, 0, 0, 0) }, uHoverColor: { value: new THREE.Color(0x3cff9a) } },
       extensions: { derivatives: true },
     });
@@ -345,7 +350,7 @@ export class Renderer {
     const portrait = w < h * 0.9;
     {
       // Frame the whole map, leaving room for the side dock (desktop) or the bottom sheet (phone).
-      const W = this.game.grid.w, H = this.game.grid.h;
+      const W = this.game.grid.w + 2 * MARGIN, H = this.game.grid.h + 2 * MARGIN;
       const vfov = THREE.MathUtils.degToRad(this.camera.fov);
       const hfov = 2 * Math.atan(Math.tan(vfov / 2) * (w / h));
       // Phone lying down: narrow 240px panel on the right and a slim top bar.
@@ -357,8 +362,8 @@ export class Renderer {
       const needW = (W * 1.05) / (2 * Math.tan(hfov / 2) * usableW);
       const dist = Math.max(needH, needW);
       const visH = 2 * dist * Math.tan(vfov / 2);
-      const target = new THREE.Vector3(W / 2 + (portrait ? 0 : dist * Math.tan(hfov / 2) * (1 - usableW)), 0,
-        H / 2 + (portrait ? visH * (0.5 - 0.36) : lying ? -visH * (44 / h) / 2 : -visH * 0.02));
+      const target = new THREE.Vector3(W / 2 - MARGIN + (portrait ? 0 : dist * Math.tan(hfov / 2) * (1 - usableW)), 0,
+        H / 2 - MARGIN + (portrait ? visH * (0.5 - 0.36) : lying ? -visH * (44 / h) / 2 : -visH * 0.02));
       // Fully zoomed out = this framing. Zoom in down to ~30%; panning stays inside it.
       this.fit = { dist, target, tanH: Math.tan(hfov / 2), tanV: Math.tan(vfov / 2) };
       this.view.maxDist = dist; this.view.minDist = dist * 0.3;
