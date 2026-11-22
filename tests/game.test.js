@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game, DIFFICULTIES } from '../src/game.js';
 import { Grid } from '../src/map.js';
+import { waveFor, bountyFor } from '../src/data/enemies.js';
 import { TOWERS, RECIPES, CELL, tierTag, tierLabel } from '../src/data/towers.js';
 
 test('initial path exists through all waypoints', () => {
@@ -124,4 +125,32 @@ test('heal never exceeds the difficulty max', () => {
   const m = new Game();
   m.lives = 7; m.healLife();
   assert.equal(m.lives, 8);
+});
+
+test('wave 51 repeats wave 1 three times stronger', () => {
+  const a = waveFor(1)[0], b = waveFor(51)[0];
+  assert.equal(b.name, a.name);
+  assert.equal(b.hp, a.hp * 3);
+  assert.equal(b.armor, a.armor + 5);
+  assert.equal(b.cycle, 1);
+  assert.equal(a.cycle, 0);
+});
+
+test('wave 100 is the cycle-1 boss, wave 101 is cycle 2', () => {
+  assert.ok(waveFor(100)[0].boss);
+  assert.equal(waveFor(100)[0].cycle, 1);
+  assert.equal(waveFor(101)[0].cycle, 2);
+  assert.equal(waveFor(101)[0].hp, waveFor(1)[0].hp * 9);
+});
+
+test('bounty scales with cycle', () => {
+  assert.equal(bountyFor(waveFor(51)[0]), 2 * bountyFor(waveFor(1)[0]));
+});
+
+test('game keeps going after wave 50', () => {
+  const g = new Game();
+  g.level = 50; g.phase = 'wave';
+  g.endWave();
+  assert.equal(g.level, 51);
+  assert.equal(g.phase, 'build');
 });

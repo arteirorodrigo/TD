@@ -286,8 +286,8 @@ export class Game {
 
   endWave() {
     this.level++;
-    if (this.level > MAX_LEVEL) { this.phase = 'won'; this.emit('won'); }
-    else { this.phase = 'build'; this.emit('waveEnd', this.level - 1); }
+    this.phase = 'build';
+    this.emit('waveEnd', this.level - 1);
     this.emit('change');
   }
 

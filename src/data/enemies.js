@@ -85,9 +85,14 @@ export const ENEMY_TYPES = RAW.map(([level, name, hp, speed, armor, mr, air, bos
 }));
 
 // Wave composition (tunable): 10 units per normal level split between variants, 1 for bosses.
+// Endless: after MAX_LEVEL the 50 waves repeat; each cycle c multiplies hp by 3^c and adds 5*c armor.
 export const UNITS_PER_WAVE = 10;
+export const cycleOf = (level) => Math.floor((level - 1) / MAX_LEVEL);
 export function waveFor(level) {
-  const types = ENEMY_TYPES.filter((e) => e.level === level);
+  const c = cycleOf(level);
+  const base = level - c * MAX_LEVEL;
+  const types = ENEMY_TYPES.filter((e) => e.level === base)
+    .map((t) => ({ ...t, hp: t.hp * 3 ** c, armor: t.armor + 5 * c, cycle: c }));
   const units = [];
   if (types.some((t) => t.boss)) {
     units.push(types.find((t) => t.boss));
@@ -99,7 +104,8 @@ export function waveFor(level) {
 
 // Gold per kill (tunable).
 export function bountyFor(type) {
-  return type.boss ? 30 + type.level * 3 : 2 + Math.floor(type.level / 3);
+  const base = type.boss ? 30 + type.level * 3 : 2 + Math.floor(type.level / 3);
+  return base * (1 + (type.cycle || 0));
 }
 
 export const ABILITY_TEXT = {
