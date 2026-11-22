@@ -470,6 +470,9 @@ export class Renderer {
         body.scale.setScalar(1.6 + def.tier * 0.3);
         gem = new THREE.Group(); gem.add(body); wings = [];
         tilt = new THREE.Group(); tilt.rotation.x = DRAGON_TILT; tilt.position.set(0, 0.3, 0.35); tilt.add(gem);
+        // Ground shadow that shows up when the dragon takes off.
+        const sh = new THREE.Mesh(this.discGeo, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0, depthWrite: false }));
+        sh.rotation.x = -Math.PI / 2; sh.position.y = 0.26; sh.scale.set(0.9, 0.55, 1); grp.add(sh); tilt.userData.shadow = sh;
       } else {
         const dr = buildDragon(def.color, def.tier);
         gem = dr.group; wings = dr.wings;
@@ -899,7 +902,13 @@ export class Renderer {
             const fly = this.game.phase === 'wave' ? 1 : 0;
             ud.lift = (ud.lift ?? fly) + (fly - (ud.lift ?? fly)) * Math.min(1, dt * 2.5);
             const lifted = ud.lift * (1.4 + Math.sin(this.time * 2.2 + ud.phase) * 0.18);
-            if (ud.tilt) ud.tilt.position.y = ud.tiltY + lifted; else ud.gem.position.y = ud.baseY + lifted;
+            if (ud.tilt) {
+              // Flying: rises over the neighbouring stones, drifts up on screen and grows a little; shadow stays below.
+              ud.tilt.position.y = ud.tiltY + lifted * 2.2;
+              ud.tilt.position.z = 0.35 - ud.lift * 1.1;
+              ud.tilt.scale.setScalar(1 + ud.lift * 0.18);
+              ud.tilt.userData.shadow.material.opacity = 0.38 * ud.lift;
+            } else ud.gem.position.y = ud.baseY + lifted;
             ud.gem.rotation.z = ud.lift * Math.sin(this.time * 2.2 + ud.phase) * 0.06;
           } else ud.gem.position.y = ud.baseY + Math.sin(this.time * 2 + ud.phase) * 0.12;
         } else {
