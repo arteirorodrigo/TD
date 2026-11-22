@@ -767,7 +767,7 @@ export class Renderer {
         case 'splash': this.addRing(U(f.x), U(f.y), U(f.r), f.color, 0.35); break;
         case 'lightning': this.addLightning(f.pts, f.color); break;
         case 'death': this.burst(U(f.x), f.air ? 2.6 : 0.8, U(f.y), f.boss ? 0xffd34a : 0xffb27a, f.boss ? 120 : 26, f.boss ? 9 : 5, 0.8); onText?.(f.x, f.y, `+${f.gold}`, 'gold'); break;
-        case 'leak': this.burst(U(f.x), 1, U(f.y), 0xff3048, 40, 6, 0.8); onText?.(f.x, f.y, f.lost > 1 ? `−${f.lost} vidas` : '−1 vida', 'leak'); break;
+        case 'leak': this.burst(U(f.x), 1, U(f.y), 0xff3048, 40, 6, 0.8); onText?.(f.x, f.y, f.lost > 1 ? `−${f.lost} vidas` : '−1 vida', 'life', f.lost); break;
         case 'miss': onText?.(f.x, f.y, 'errou', 'miss'); break;
         case 'block': onText?.(f.x, f.y, 'bloqueou', 'miss'); break;
         case 'jackpot': onText?.(f.x, f.y, '10x ouro!', 'gold'); break;

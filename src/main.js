@@ -180,6 +180,7 @@ function renderUI() {
   $('hud-level').textContent = game.level;
   $('hud-diff').textContent = DIFFICULTIES[game.difficulty].name;
   $('hud-lives').textContent = game.lives;
+  document.querySelectorAll('.chip.lives').forEach((c) => c.classList.toggle('last', game.lives === 1 && game.phase !== 'over'));
   $('hud-gold').textContent = fmt(game.gold);
   const ph = $('hud-phase');
   ph.textContent = phaseText();
@@ -460,6 +461,35 @@ function floatText(x, y, text, cls) {
   floaters.push({ el, x: x / CELL, y: y / CELL, t: 0 });
   if (floaters.length > 60) floaters.shift().el.remove();
 }
+// Vida perdida (2ª auditoria, design 5): borda vermelha, coração pulsa e um "−N" voa até ele.
+// Perdas próximas (até 0,35 s) viram um só "−N".
+let lifeBatch = null;
+function lifeLost(x, y, n = 1) {
+  if (lifeBatch) { lifeBatch.n += n; return; }
+  lifeBatch = { x, y, n };
+  setTimeout(() => { const b = lifeBatch; lifeBatch = null; showLifeLoss(b); }, 350);
+}
+function showLifeLoss({ x, y, n }) {
+  const vig = $('life-vignette');
+  vig.classList.remove('on'); void vig.offsetWidth; vig.classList.add('on');
+  const chip = document.querySelector('#main-card .chip.lives');
+  if (!chip || !chip.getClientRects().length) return;
+  chip.classList.remove('hit'); void chip.offsetWidth; chip.classList.add('hit');
+  const from = view.project(x / CELL, y / CELL, 1.5);
+  const r = chip.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'life-fly'; el.textContent = `−${n}`;
+  el.style.left = from.x + 'px'; el.style.top = from.y + 'px';
+  document.body.appendChild(el);
+  const dx = r.left + r.width / 2 - from.x, dy = r.top + r.height / 2 - from.y;
+  const anim = el.animate([
+    { transform: 'translate(-50%, -50%) scale(.6)', opacity: 0 },
+    { transform: 'translate(-50%, -50%) scale(1.5)', opacity: 1, offset: 0.2 },
+    { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.8)`, opacity: 1, offset: 0.9 },
+    { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.5)`, opacity: 0 },
+  ], { duration: 900, easing: 'cubic-bezier(.4,0,.2,1)' });
+  anim.onfinish = () => el.remove();
+}
 function updateFloaters(dt) {
   for (let i = floaters.length - 1; i >= 0; i--) {
     const f = floaters[i];
@@ -658,7 +688,7 @@ function loop(now) {
   if (party && (party.t += dt) >= 2.2) endParty();
   let sim = screensOpen() || game.phase === 'over' || party ? 0 : dt * speed;
   while (sim > 0) { const s = Math.min(sim, 1 / 40); game.update(s); sim -= s; }
-  view.drainFx(floatText);
+  view.drainFx((x, y, text, cls, n) => (cls === 'life' ? lifeLost(x, y, n) : floatText(x, y, text, cls)));
   view.frame(dt);
   updateFloaters(dt);
   updateConfirm();
