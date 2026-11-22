@@ -334,6 +334,28 @@ body.editing .play-only, body.editing .plaque, body.editing .chip, body.editing 
   .card.fold:not(.open) h3 { margin: 0; }
   .card.fold:not(.open) > :not(h3) { display: none; }
 }
+
+/* ---------- Computador: barra de cima vai para a coluna da direita (pedido do dono 22/11) ---------- */
+@media (min-aspect-ratio: 9/10) and (min-height: 481px) {
+  .hud { left: auto; right: calc(max(16px, env(safe-area-inset-right, 0px)) + 2px); width: 296px; padding-left: 0; padding-right: 0; }
+  .hud-bar { flex-wrap: wrap; gap: 8px; }
+  .hud-bar > .spacer { display: none; }
+  #btn-menu { order: 1; align-self: stretch; }
+  #btn-menu .lbl { display: none; }
+  .hud-tools { order: 2; flex: 1; justify-content: space-between; }
+  .hud-tools .lbl { display: inline; }
+  .hud-tools .btn { flex-direction: column; gap: 3px; font-size: 10px; letter-spacing: .04em; padding: 5px 6px; }
+  .hud-tools .btn svg.i { width: 17px; height: 17px; }
+  .hud-tools .sep { margin: 6px 2px; }
+  .seg { align-items: center; }
+  .seg button { padding: 7px 8px; }
+  .plaque { order: 3; width: 100%; justify-content: space-between; }
+  .chip { padding: 7px 10px; }
+  .chip .k { display: none; }
+  .phase { order: 4; display: block; width: 100%; margin: 0; padding: 8px 14px; font-size: 15px; white-space: normal; text-align: center; }
+  .alert { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 16px; right: 332px; margin: 0; }
+  .dock { top: calc(var(--hud-h, 160px) + 6px); max-height: calc(100% - var(--hud-h, 160px) - 16px); }
+}
 </style>
   <script type="module" src="./src/main.js"></script>
 </head>

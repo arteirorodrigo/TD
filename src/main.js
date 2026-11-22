@@ -6,6 +6,9 @@ import { initMenu, showMenu, hideScreens, screensOpen } from './menu.js';
 import { submitRecord, getDiscovered, markDiscovered, getMazes, saveMaze, deleteMaze, tutorialSeen, markTutorialSeen } from './records.js';
 import { bookLines, SECRET_IDS } from './book.js';
 
+// A coluna da direita começa logo abaixo da barra de cima (que muda de altura com o texto da fase).
+{ const hud = document.querySelector('.hud'); if (hud && window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty('--hud-h', hud.offsetHeight + 'px')).observe(hud); }
+
 const $ = (id) => document.getElementById(id);
 const hex = (c) => '#' + c.toString(16).padStart(6, '0');
 const fmt = (n) => (n >= 10000 ? Math.round(n / 1000) + 'k' : Math.round(n).toLocaleString('pt-BR'));
