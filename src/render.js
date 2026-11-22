@@ -12,7 +12,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 // Dragon look: 'escultura' = sculpted model (by a friend of the owner), tinted per dragon; 'padrao' = original
 // procedural dragon (also tagged in git as "modelo-padrao"). Change here to switch back.
-const DRAGON_MODEL = 'escultura';
+const DRAGON_MODEL = 'padrao';
 // The map is seen from above, so the sculpted dragon leans toward the camera (like a figure on a board) to show
 // its silhouette; it turns left/right around its own up axis to face targets.
 const DRAGON_TILT = -Math.PI / 2.4;
