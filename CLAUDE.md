@@ -5,6 +5,15 @@ Nome do jogo (decidido em 22/11): **O Covil dos Dragões TD** em português e **
 Tower defense de dragões no navegador (Three.js + Vite). Destino final: Play Store e outras lojas; o navegador é só para testar.
 O dono não é programador: fale em português simples, sem termos técnicos, e mostre fotos (prints) antes de decidir algo visual.
 
+## Primeira coisa de toda sessão nova: confirmar o repositório
+
+Antes de qualquer trabalho, mesmo que o pedido pareça simples, pergunte ao
+dono em qual repositório vamos trabalhar. Chame `get_session` para ver qual
+veio selecionado e `list_repos` para listar os dele; mostre a lista curta,
+marcando o selecionado. Se ele escolher outro, anexe com `add_repo` e clone;
+se não der para trabalhar lá, sugira abrir uma sessão nova com esse
+repositório selecionado no app. Só depois siga o resto destas instruções.
+
 ## Rodar e testar
 - `npx vite` (jogo em http://localhost:5173/) · `npm test` (testes das regras, `node --test`).
 - Fotos do jogo: `node scripts/foto-jogo.mjs <url> <saida.png> [script.js] [espera_ms]` (Chrome sem janela; `TELA=640,360` simula celular). Ganchos no navegador: `window.__game()`, `window.__view()`.
@@ -22,6 +31,8 @@ O dono não é programador: fale em português simples, sem termos técnicos, e 
 - `docs/auditorias/` relatórios dos auditores e `decisoes-do-dono.md` · `docs/superpowers/` projetos e planos · `docs/ilustrador/` fichas para o ilustrador
 
 ## Decisões do dono (respeitar)
+- **No celular, sempre em pé** (decidido em 23/11). Toda tela nova é desenhada para celular em pé.
+- Tela principal no molde dos jogos de celular (topo com recursos, temporada, ícones nas laterais, botão JOGAR grande, 5 abas embaixo com Aventura no meio), no **estilo pergaminho** (versão 1 de `docs/ideias-tela-principal/`). Lugares reservados para moedas, loja, missões e ovos mesmo antes de funcionarem.
 - Escamas mostram nível T0–T5 ("T0 · Partida").
 - Dificuldades por vidas: Fácil 20, Médio 10, Difícil 5, Sobrevivente 1. Fases infinitas (ciclo de 50).
 - Menu em pergaminho (estilo do protótipo Lovable, com as fontes do jogo Cinzel + Manrope).
