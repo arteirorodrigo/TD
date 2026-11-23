@@ -348,13 +348,16 @@ export class Renderer {
     const path = this.game.path;
     if (!this.trailMat) {
       this.trailMat = new THREE.ShaderMaterial({
-        transparent: true, depthWrite: false, side: THREE.DoubleSide,
+        // Drawn right after the ground and before everything else, without depth test: the stones on both sides of a
+        // narrow corridor would otherwise hide this flat line (seen on the phone); pieces and enemies still cover it.
+        transparent: false, depthTest: false, depthWrite: false, side: THREE.DoubleSide,
         uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(0x9a1c12) } },
         vertexShader: 'attribute float aDist; varying float vD; varying float vSide; attribute float aSide; void main(){ vD = aDist; vSide = aSide; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
-        fragmentShader: 'uniform float uTime; uniform vec3 uColor; varying float vD; varying float vSide; void main(){ float d = fract(vD / 1.5 - uTime * .35); float a = smoothstep(.0, .06, d) * (1. - smoothstep(.52, .58, d)); float edge = 1. - smoothstep(.75, 1., abs(vSide)); if (a * edge < .02) discard; gl_FragColor = vec4(uColor, .92 * a * edge); }',
+        fragmentShader: 'uniform float uTime; uniform vec3 uColor; varying float vD; varying float vSide; void main(){ float d = fract(vD / 1.5 - uTime * .35); float a = smoothstep(.0, .06, d) * (1. - smoothstep(.52, .58, d)); float edge = 1. - smoothstep(.75, 1., abs(vSide)); if (a * edge < .5) discard; gl_FragColor = vec4(uColor, 1.); }',
       });
       this.trail = new THREE.Mesh(new THREE.BufferGeometry(), this.trailMat);
-      this.trail.renderOrder = 1; this.trail.frustumCulled = false;
+      this.trail.renderOrder = -1; this.trail.frustumCulled = false;
+      this.ground.renderOrder = -2;
       this.trail.visible = this.trailOn !== false;
       this.scene.add(this.trail);
     }
@@ -369,7 +372,7 @@ export class Renderer {
       }
       pts.push(p);
     }
-    const w = 0.2, pos = [], dist = [], side = [], idx = [];
+    const w = 0.28, pos = [], dist = [], side = [], idx = [];
     let acc = 0;
     for (let i = 0; i < pts.length - 1; i++) {
       const a = pts[i], b = pts[i + 1], dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
