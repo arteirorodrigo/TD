@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<title>Caixa de mensagens — 3 ideias</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Manrope:wght@500;700;800&display=swap">
+<style>
+*{box-sizing:border-box;margin:0}
+body{background:#1b1410;font-family:Manrope,sans-serif;padding:24px;display:flex;gap:28px;justify-content:center}
+.col{display:flex;flex-direction:column;align-items:center;gap:10px}
+.rot{font:700 22px Cinzel,serif;color:#f1d9a6}
+.sub{font:500 13px Manrope;color:#c9b08a;max-width:390px;text-align:center}
+.tel{width:390px;height:844px;position:relative;overflow:hidden;border-radius:26px;border:3px solid #000;background:url(partida.png) 0 0/390px 844px}
+.tag{font-weight:800;color:#ffb199}
+.tag.s{color:#ffd257}.tag.g{color:#9fd0ff}
+/* 1: faixa fixa */
+.faixa{position:absolute;left:12px;right:84px;bottom:22px;height:40px;display:flex;align-items:center;gap:8px;padding:0 10px;border-radius:10px;
+ background:rgba(30,18,10,.88);border:1px solid #b8893c;color:#f6e3bb;font:500 12.5px Manrope;white-space:nowrap;overflow:hidden}
+.faixa .ic{font-size:18px;flex:none}
+.faixa .t{overflow:hidden;text-overflow:ellipsis}
+.faixa .n{flex:none;margin-left:auto;background:#c0392b;color:#fff;font:800 11px Manrope;border-radius:9px;padding:1px 6px}
+/* 2: balão */
+.bolha{position:absolute;left:14px;bottom:22px;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:26px;
+ background:#f3e2bd;border:3px solid #b8893c;box-shadow:0 5px 12px #0008}
+.bolha .n{position:absolute;top:-3px;right:-3px;background:#c0392b;color:#fff;font:800 11px Manrope;border-radius:9px;padding:1px 6px;border:2px solid #f3e2bd}
+.balao{position:absolute;left:82px;right:88px;bottom:24px;padding:9px 12px;border-radius:12px 12px 12px 2px;background:#fff6e2;border:2px solid #8e2a1c;
+ color:#3a2414;font:500 12.5px/1.35 Manrope;box-shadow:0 6px 14px #0007}
+.balao b{color:#8e2a1c}
+.balao small{display:block;margin-top:3px;color:#8a6a48;font:700 10px Manrope}
+/* 3: painel aberto */
+.veu{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+.painel{position:absolute;left:0;right:0;bottom:0;height:330px;border-radius:18px 18px 0 0;background:#f1e0bc;border-top:3px solid #b8893c;box-shadow:0 -8px 20px #0008;display:flex;flex-direction:column}
+.pega{width:44px;height:5px;border-radius:3px;background:#b89a6e;margin:8px auto 4px}
+.abas{display:flex;gap:6px;padding:4px 12px 8px;border-bottom:1px solid #d9bd86}
+.abas span{font:800 12px Manrope;padding:6px 12px;border-radius:14px;color:#6b4c32}
+.abas .on{background:#3a2414;color:#f6e3bb}
+.abas .off{opacity:.5}
+.msgs{flex:1;padding:8px 12px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.m{font:500 13px/1.35 Manrope;color:#3a2414;padding:7px 10px;border-radius:10px;background:#fff8e8;border-left:4px solid #b8893c}
+.m.p{border-left-color:#8e2a1c}.m.d{border-left-color:#3f7bbf}
+.m .h{display:block;font:800 10.5px Manrope;color:#8a6a48;margin-bottom:2px}
+.escrever{margin:6px 12px 14px;height:40px;border-radius:20px;border:1px dashed #b89a6e;display:flex;align-items:center;padding:0 14px;color:#a08560;font:600 12.5px Manrope}
+</style></head><body>
+
+<div class="col"><div class="rot">1 · Faixa embaixo</div>
+<div class="tel">
+ <div class="faixa"><span class="ic">💬</span><span class="t"><span class="tag">[Aviso]</span> Em 4 ondas: inimigos INVISÍVEIS…</span><span class="n">2</span></div>
+</div>
+<div class="sub">Uma linha fixa, como na sua referência: mostra a última mensagem. Tocar abre o histórico.</div></div>
+
+<div class="col"><div class="rot">2 · Balão que some</div>
+<div class="tel">
+ <div class="bolha">💬<span class="n">2</span></div>
+ <div class="balao"><b>Perigo em 4 ondas:</b> inimigos invisíveis. Só a Escama Etérea revela.<small>some em 5 s · toque no 💬 para ver de novo</small></div>
+</div>
+<div class="sub">Só um botão no canto. O aviso aparece num balão por alguns segundos e some sozinho; nada fica cobrindo o mapa.</div></div>
+
+<div class="col"><div class="rot">3 · Histórico (aberto)</div>
+<div class="tel">
+ <div class="veu"></div>
+ <div class="painel"><div class="pega"></div>
+  <div class="abas"><span class="on">Avisos</span><span class="off">Geral · em breve</span><span class="off">Clã · em breve</span></div>
+  <div class="msgs">
+   <div class="m p"><span class="h">⚠️ PERIGO · fase 5</span>Em 4 ondas (fase 8): inimigos <b>invisíveis</b>. Só a Escama Etérea (e alguns dragões) revela.</div>
+   <div class="m d"><span class="h">🐉 DRAGÃO · fase 4</span>Novo dragão chocado: <b>Dragão de Fogo</b>!</div>
+   <div class="m"><span class="h">📜 DICA · fase 3</span>Pedras alongam o caminho e viram escamas que atacam.</div>
+  </div>
+  <div class="escrever">Escrever mensagem… (modo online, em breve)</div>
+ </div>
+</div>
+<div class="sub">É o que abre ao tocar na faixa (1) ou no 💬 (2): avisos, dragões chocados e dicas guardados. As abas Geral e Clã ficam prontas para o online.</div></div>
+
+</body></html>
