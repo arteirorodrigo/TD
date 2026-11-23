@@ -3,6 +3,8 @@ import { Renderer } from './render.js';
 import { TOWERS, QUALITIES, CELL, abilityText, tierTag, tierLabel } from './data/towers.js';
 import { waveFor, upcomingSpecial, HP_MULT, SPEED_MULT, ABILITY_TEXT } from './data/enemies.js';
 import { initMenu, showMenu, hideScreens, screensOpen } from './menu.js';
+import parchUrl from './assets/pergaminho.jpg';
+import dragonUrl from './assets/dragao_ninho.jpg';
 import { submitRecord, getDiscovered, markDiscovered, getMazes, saveMaze, deleteMaze, tutorialSeen, markTutorialSeen } from './records.js';
 import { bookLines, SECRET_IDS } from './book.js';
 
@@ -713,3 +715,12 @@ window.__view = () => view;
 window.__towers = TOWERS;
 window.__select = (uid) => select(uid);
 requestAnimationFrame(loop);
+
+// Hide the loading screen once the fonts and the menu pictures are ready (or after 6 s at worst).
+{
+  const pic = (url) => new Promise((ok) => { const i = new Image(); i.onload = i.onerror = ok; i.src = url; });
+  Promise.race([
+    Promise.all([document.fonts?.ready, pic(parchUrl), pic(dragonUrl)]),
+    new Promise((ok) => setTimeout(ok, 6000)),
+  ]).then(() => requestAnimationFrame(() => window.__loadDone?.()));
+}
