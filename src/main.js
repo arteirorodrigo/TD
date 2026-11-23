@@ -40,7 +40,7 @@ function start(difficulty = 'medio', { editor = false, maze = null } = {}) {
     if (type === 'hatch') { markDiscovered(store(), id); startParty(id); }
     if (type === 'change' && tutorial === 'wait-choose' && game.phase === 'choose') showTip(3);
   });
-  selectedUid = null; selectedEnemyUid = null;
+  selectedUid = null; selectedEnemyUid = null; alertClosedFor = null;
   view.setGuide(editor ? null : guideMaze?.cells ?? null);
   $('tip').hidden = true; $('help-btn').hidden = true; tutorial = null;
   endParty();
@@ -259,9 +259,13 @@ function specialWarning() {
   const [what, tip] = SPECIAL_TEXT[sp.kind];
   return `${when}: ${what}. ${tip}`;
 }
+// Closing the warning hides it until the next, different danger.
+let alertClosedFor = null;
+const alertKey = () => { const sp = upcomingSpecial(game.level); return sp ? `${sp.level}:${sp.kind}` : null; };
+$('hud-alert-x').onclick = () => { alertClosedFor = alertKey(); $('hud-alert').hidden = true; };
 function renderAlert() {
   const msg = specialWarning();
-  $('hud-alert').hidden = !msg;
+  $('hud-alert').hidden = !msg || alertKey() === alertClosedFor;
   if (msg) $('hud-alert-text').innerHTML = msg;
 }
 
@@ -389,6 +393,12 @@ function autoSelectBoss() {
   }
 }
 
+// Every info card gets a close button (cards are redrawn often, so it is added after each draw).
+$('sel-card').addEventListener('click', (ev) => { if (ev.target.closest('.card-x')) { setAim(null); select(null); } });
+new MutationObserver(() => {
+  const card = $('sel-card');
+  if (!card.querySelector('.card-x')) card.insertAdjacentHTML('afterbegin', '<button class="x-close card-x" aria-label="Fechar">✕</button>');
+}).observe($('sel-card'), { childList: true });
 function select(uid) { selectedUid = uid; selectedEnemyUid = null; renderUI(); }
 function selectEnemy(uid) { selectedUid = null; selectedEnemyUid = uid; renderUI(); }
 

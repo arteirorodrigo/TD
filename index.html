@@ -63,7 +63,7 @@ svg.i { width: 16px; height: 16px; flex: none; display: block; }
 .hud { position: fixed; top: 0; left: 0; right: 0; z-index: 4; pointer-events: none;
   padding: calc(env(safe-area-inset-top, 0px) + 12px) max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); }
 .hud-bar { display: flex; gap: 10px; align-items: center; }
-.hud-bar > *, .hud-tools > *, .alert span { pointer-events: auto; }
+.hud-bar > *, .hud-tools > *, .alert > span { pointer-events: auto; }
 .spacer { flex: 1; }
 
 .plaque { display: flex; align-items: stretch; background: var(--paper); border-radius: 6px; box-shadow: var(--paper-shadow), var(--rule); }
@@ -103,9 +103,13 @@ svg.i { width: 16px; height: 16px; flex: none; display: block; }
 .seg button[aria-pressed="true"] { background: linear-gradient(var(--btn-dark), var(--btn-dark-2)); color: var(--gold-bright); box-shadow: inset 0 1px 0 rgba(240, 195, 90, .3); }
 
 .alert { display: flex; justify-content: center; margin-top: 10px; pointer-events: none; }
-.alert span { font: 600 13px/1.35 var(--font-body); color: #fbe9dc; padding: 8px 16px; border-radius: 6px; text-align: center; max-width: 640px;
+.alert > span { font: 600 13px/1.35 var(--font-body); color: #fbe9dc; padding: 8px 16px; border-radius: 6px; text-align: center; max-width: 640px;
   background: linear-gradient(#8e2a1c, #6a1c12); box-shadow: 0 0 0 1px #3d0c06, inset 0 1px 0 rgba(255, 190, 160, .35), 0 8px 18px -6px rgba(0, 0, 0, .7); }
 .alert b { color: #fff; }
+.alert > span { display: flex; align-items: center; gap: 10px; padding-right: 6px !important; }
+.x-close { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; border: 0; cursor: pointer; font: 700 15px/1 var(--font-body); }
+.alert .x-close { background: rgba(0, 0, 0, .25); color: #fff; }
+.card-x { position: absolute; top: 6px; right: 6px; z-index: 2; background: rgba(58, 36, 20, .12); color: var(--ink); }
 
 /* ---------- Dock ---------- */
 .dock { position: fixed; z-index: 3; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(env(safe-area-inset-top, 0px) + 72px); width: 300px;
@@ -385,7 +389,8 @@ body.editing .play-only, body.editing .plaque, body.editing .chip, body.editing 
   .hud-tools .btn svg.i { width: 18px; height: 18px; }
   .seg button { padding: 0 9px; }
   .alert { position: fixed; left: 12px; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 62px); margin: 0; }
-  .alert span { font-size: 12px; }
+  .alert > span { font-size: 12px; }
+  body:has(#help-btn:not([hidden])) .alert > span { padding-left: 74px; }
   .dock { top: calc(63.5% + 42px); bottom: calc(env(safe-area-inset-bottom, 0px) + 76px); left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
     width: auto; max-height: none; gap: 8px; padding-bottom: 4px; }
   .card { padding: 10px 12px; }
@@ -409,7 +414,7 @@ body.editing .play-only, body.editing .plaque, body.editing .chip, body.editing 
   .seg button { padding: 5px 7px; font-size: 12px; }
   .phase { display: none; }
   .alert { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 46px); left: max(12px, env(safe-area-inset-left, 0px)); right: 262px; margin: 0; }
-  .alert span { font-size: 11px; padding: 5px 10px; }
+  .alert > span { font-size: 11px; padding: 5px 10px; }
   .dock { top: calc(env(safe-area-inset-top, 0px) + 46px); bottom: calc(env(safe-area-inset-bottom, 0px) + 6px); right: max(8px, env(safe-area-inset-right, 0px));
     width: 240px; max-height: none; gap: 6px; }
   .card { padding: 8px 10px; }
@@ -569,7 +574,7 @@ body.fan-open .fan-scrim { display: block; }
       </div>
     </div>
   </div>
-  <div class="alert" id="hud-alert" hidden><span id="hud-alert-text"></span></div>
+  <div class="alert" id="hud-alert" hidden><span><span id="hud-alert-text"></span><button class="x-close" id="hud-alert-x" aria-label="Fechar aviso">✕</button></span></div>
 </header>
 <!-- Leque em "L" no canto de baixo à direita (escolha do dono 22/11) -->
 <div class="fan-scrim" id="fan-scrim"></div>
