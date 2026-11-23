@@ -68,7 +68,8 @@ function endParty() {
 // The tap that skips the party is swallowed: it must not also press a button or pick a tower underneath.
 let swallowClick = false;
 window.addEventListener('pointerdown', (ev) => {
-  if (!party) return;
+  // A new touch after the party: if the skipping tap never produced a click, stop swallowing now.
+  if (!party) { swallowClick = false; return; }
   ev.stopPropagation(); ev.preventDefault();
   swallowClick = true;
   if (party.t > 0.2) endParty();
@@ -518,7 +519,10 @@ function tlFromPoint(cx, cy) {
 const pointers = new Map();
 let pinch = null;
 canvas.addEventListener('pointerdown', (ev) => {
-  canvas.setPointerCapture(ev.pointerId);
+  // A primary pointer means no other finger is down: forget fingers whose "lifted" event got lost,
+  // otherwise every later tap would look like a two-finger pinch and nothing could be placed.
+  if (ev.isPrimary) { pointers.clear(); pinch = null; }
+  try { canvas.setPointerCapture(ev.pointerId); } catch { /* pointer already gone */ }
   pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
   if (pointers.size === 2) {
     const [a, b] = [...pointers.values()];
@@ -568,6 +572,8 @@ canvas.addEventListener('pointerup', (ev) => {
   if (drag?.id === ev.pointerId || wasPinch) drag = null;
 });
 canvas.addEventListener('pointercancel', (ev) => { pointers.delete(ev.pointerId); pinch = null; drag = null; });
+// If the canvas loses the finger without a pointerup, drop it too (its pointerup may never come here).
+canvas.addEventListener('lostpointercapture', (ev) => { pointers.delete(ev.pointerId); if (pointers.size < 2) pinch = null; if (drag?.id === ev.pointerId) drag = null; });
 canvas.addEventListener('pointerleave', () => { if (!aimSpot) view.setHover(null); });
 canvas.addEventListener('wheel', (ev) => { ev.preventDefault(); zoomAt(ev.clientX, ev.clientY, Math.exp(ev.deltaY * 0.0012)); }, { passive: false });
 // Zoom keeping the point under the cursor/fingers in place.
