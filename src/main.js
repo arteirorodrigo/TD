@@ -40,7 +40,7 @@ function start(difficulty = 'medio', { editor = false, maze = null } = {}) {
     if (type === 'hatch') { markDiscovered(store(), id); startParty(id); }
     if (type === 'change' && tutorial === 'wait-choose' && game.phase === 'choose') showTip(3);
   });
-  selectedUid = null; selectedEnemyUid = null; alertClosedFor = null;
+  selectedUid = null; selectedEnemyUid = null; chatReset();
   view.setGuide(editor ? null : guideMaze?.cells ?? null);
   $('tip').hidden = true; $('help-btn').hidden = true; tutorial = null;
   endParty();
@@ -57,6 +57,7 @@ function startParty(id) {
   party = { t: 0 };
   view.celebrate(e, e.def.color);
   $('party-name').textContent = TOWERS[id].name;
+  chatPost('d', `🐉 DRAGÃO · fase ${game.level}`, `Novo dragão chocado: <b>${TOWERS[id].name}</b>!`);
   $('party').hidden = false;
 }
 function endParty() {
@@ -259,14 +260,41 @@ function specialWarning() {
   const [what, tip] = SPECIAL_TEXT[sp.kind];
   return `${when}: ${what}. ${tip}`;
 }
-// Closing the warning hides it until the next, different danger.
-let alertClosedFor = null;
-const alertKey = () => { const sp = upcomingSpecial(game.level); return sp ? `${sp.level}:${sp.kind}` : null; };
-$('hud-alert-x').onclick = () => { alertClosedFor = alertKey(); $('hud-alert').hidden = true; };
+// ---------- Messages (bar at the bottom + history). Dangers and hatched dragons land here. ----------
+const chat = { list: [], unread: 0, seen: new Set() };
+function chatPost(kind, head, html, { ping = false } = {}) {
+  chat.list.push({ kind, head, html });
+  const open = !$('chat-panel').hidden;
+  if (!open) chat.unread++;
+  const tag = kind === 'p' ? '<span class="chat-tag">[Perigo]</span> ' : kind === 'd' ? '<span class="chat-tag d">[Dragão]</span> ' : '<span class="chat-tag i">[Covil]</span> ';
+  $('chat-last').innerHTML = tag + html;
+  $('chat-n').hidden = !chat.unread; $('chat-n').textContent = chat.unread;
+  if (ping) { const b = $('chat-bar'); b.classList.remove('ping'); void b.offsetWidth; b.classList.add('ping'); }
+  if (open) renderChat();
+}
+function renderChat() {
+  $('chat-msgs').innerHTML = [...chat.list].reverse().map((m) => `<div class="chat-msg ${m.kind}"><span class="h">${m.head}</span>${m.html}</div>`).join('');
+}
+function chatReset() {
+  chat.list = []; chat.unread = 0; chat.seen.clear();
+  chatPost('i', '📜 COVIL', 'Os avisos do covil aparecem aqui. Toque para ver todos.');
+  chat.unread = 0; $('chat-n').hidden = true;
+}
+function chatOpen(on) {
+  $('chat-panel').hidden = !on; $('chat-veil').hidden = !on;
+  if (on) { chat.unread = 0; $('chat-n').hidden = true; renderChat(); }
+}
+$('chat-bar').onclick = () => chatOpen(true);
+for (const id of ['chat-veil', 'chat-x', 'chat-grip']) $(id).onclick = () => chatOpen(false);
+// Danger ahead: posted once when it is first announced, and once more on the round right before it.
 function renderAlert() {
   const msg = specialWarning();
-  $('hud-alert').hidden = !msg || alertKey() === alertClosedFor;
-  if (msg) $('hud-alert-text').innerHTML = msg;
+  if (!msg) return;
+  const sp = upcomingSpecial(game.level);
+  const key = `${sp.level}:${sp.kind}:${sp.level === game.level ? 'now' : 'soon'}`;
+  if (chat.seen.has(key)) return;
+  chat.seen.add(key);
+  chatPost('p', `⚠️ PERIGO · fase ${game.level}`, msg, { ping: true });
 }
 
 function renderWave() {
