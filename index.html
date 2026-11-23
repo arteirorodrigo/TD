@@ -366,7 +366,7 @@ body.editing .hud-tools.edit-only { display: flex; }
 body.editing #dock { display: flex !important; }
 body.editing #dock > :not(#main-card), body.editing .main-card .plaque, body.editing #slots, body.editing #luck-card, body.editing #slots-card h3 { display: none !important; }
 body.editing #slots-card { border: 0; margin: 0; padding: 0; }
-body.editing .dock { top: calc(env(safe-area-inset-top, 0px) + 70px); }
+body.editing .dock { top: calc(env(safe-area-inset-top, 0px) + 70px); bottom: auto; } /* só a altura do aviso: com o celular em pé o painel cobria o mapa e pegava os toques */
 body.editing .fan, body.editing .fan-scrim { display: none; }
 
 .fan { position: fixed; z-index: 7; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); width: 64px; height: 64px; }
