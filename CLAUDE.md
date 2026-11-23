@@ -40,9 +40,10 @@ repositório selecionado no app. Só depois siga o resto destas instruções.
 - Modelos e imagens de fora: só grátis e com licença comercial. Arquivos grandes (`docs/referencias/*.glb`, `*.obj`) ficam fora do git.
 - Auditorias: comando `/auditoria` (agentes em `.claude/agents/`). O que o dono recusou está em `docs/auditorias/decisoes-do-dono.md` e não volta.
 
-## Pendências (22/11/2026, noite — tudo abaixo do "Feito" já publicado)
-- Feito na noite de 22/11: tarefas 2–7 da auditoria (plano `docs/superpowers/plans/2026-11-22-auditoria-1.md`), pequenos erros (veneno/aura no dano, recorde na fase 1, plural, inimigos parados ao sair, clique em voadores, destaque da rodada, vida 15/14) e o nome novo.
-1. Ataque por elemento: feito (projéteis com rastro, só dragões; `src/attack-fx.js`).
-2. Chocar dragão só com torres antigas: o dono acha perfeito assim (não mexer).
-3. Revisão feita e publicada. Falta: dragão sentado na construção / voando na onda.
-4. Ranking online com Firebase (Parte 2) — começando o planejamento (22/11): falta saber se é para amigos ou para o público.
+## Pendências (23/11/2026 — resumo do dia em `docs/RESUMO-2026-11-23.md`)
+- Feito em 23/11 e publicado: tela principal nova (pergaminho, lugares reservados com "em breve"), tela de carregamento com frases engraçadas, correção dos toques travados, ✕ no quadro da peça e faixa de mensagens embaixo (avisos de perigo e dragões chocados; abas Geral/Clã "em breve" para o online).
+1. Conferir no celular se o posicionamento não trava mais e se a faixa de mensagens não atrapalha.
+2. Dar vida aos lugares reservados da tela principal (moedas, energia, loja, missões, ovos, temporada…), um de cada vez; trocar os emojis por ícones no estilo do jogo.
+3. Dragão sentado na construção / voando na onda.
+4. Ranking online com Firebase (Parte 2): falta saber se é para amigos ou para o público.
+5. Chocar dragão só com torres antigas: o dono acha perfeito assim (não mexer).
