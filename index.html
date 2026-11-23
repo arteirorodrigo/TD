@@ -294,10 +294,12 @@ body.editing .play-only, body.editing .plaque, body.editing .chip, body.editing 
 @keyframes ldHue { 0% { background-position: 0 0, 0% 0%; } 50% { background-position: 0 0, 100% 100%; } 100% { background-position: 0 0, 0% 0%; } }
 .ld-title { font: 700 clamp(26px, 7vw, 40px)/1.08 "Cinzel", Georgia, serif; color: #3a2010; margin: 0; }
 .ld-rule { width: 170px; height: 1px; background: linear-gradient(90deg, transparent, #8a6a48, transparent); }
-.ld-bar { width: min(280px, 78vw); height: 14px; border-radius: 8px; background: #3a2414; border: 2px solid #b8893c; overflow: hidden; margin-top: 18px; }
+.ld-row { display: flex; align-items: center; gap: 10px; margin-top: 18px; }
+.ld-bar { width: min(240px, 64vw); height: 14px; border-radius: 8px; background: #3a2414; border: 2px solid #b8893c; overflow: hidden; }
+.ld-pct { font: 800 15px "Manrope", system-ui, sans-serif; color: #3a2414; min-width: 3.2em; text-align: left; }
 .ld-bar i { display: block; height: 100%; width: 0; background: linear-gradient(#ffd85a, #d4a24a); border-radius: 6px; transition: width .25s ease-out; }
-.ld-msg { font: 700 13px "Manrope", system-ui, sans-serif; color: #6b4c32; min-height: 1.2em; }
-.ld-tip { font: italic 500 14px "Manrope", system-ui, sans-serif; color: #6b4c32; max-width: 320px; min-height: 2.6em; margin-top: 10px; }
+.ld-msg { font: italic 500 12px "Manrope", system-ui, sans-serif; color: #6b4c32; min-height: 1.3em; margin-top: -4px; transition: opacity .25s; }
+.ld-msg.out { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .ld-egg { animation: none; } }
 
 /* ---------- Main screen (lobby): portrait phone layout, centered column on wide screens ---------- */
@@ -504,17 +506,22 @@ body.fan-open .fan-scrim { display: block; }
   <div class="ld-egg" aria-hidden="true"></div>
   <h1 class="ld-title">O Covil dos Dragões TD</h1>
   <div class="ld-rule"></div>
-  <div class="ld-bar"><i id="ld-fill"></i></div>
-  <div class="ld-msg" id="ld-msg">Carregando o covil… 0%</div>
-  <div class="ld-tip" id="ld-tip">Os caçadores querem o tesouro do covil.</div>
+  <div class="ld-row"><div class="ld-bar"><i id="ld-fill"></i></div><span class="ld-pct" id="ld-pct">0%</span></div>
+  <div class="ld-msg" id="ld-msg">Chocando os ovos…</div>
 </div>
 <script>
 // Runs before the game bundle: the bar eases toward 90% while it downloads; the game calls __loadDone() when ready.
 (function () {
-  var p = 0, done = false, t0 = Date.now(), fill = document.getElementById('ld-fill'), msg = document.getElementById('ld-msg'), tip = document.getElementById('ld-tip');
-  var tips = ['Os caçadores querem o tesouro do covil.', 'Plante escamas e desperte os dragões.', 'Trace o labirinto para atrasar os caçadores.', 'No Livro dos Dragões ficam as 8 linhas de evolução.'];
-  var k = 0, tipTimer = setInterval(function () { k = (k + 1) % tips.length; tip.textContent = tips[k]; }, 2600);
-  function show() { fill.style.width = p + '%'; msg.textContent = (p >= 100 ? 'Pronto!' : 'Carregando o covil… ' + Math.floor(p) + '%'); }
+  var p = 0, done = false, t0 = Date.now(), fill = document.getElementById('ld-fill'), pct = document.getElementById('ld-pct'), msg = document.getElementById('ld-msg');
+  var frases = ['Chocando os ovos…', 'Alimentando os dragões…', 'Afiando as garras…', 'Contando o tesouro (de novo)…', 'Acordando o dragão dorminhoco…',
+    'Polindo as escamas…', 'Esquentando o fogo…', 'Escondendo o ouro dos caçadores…', 'Ensinando o filhote a voar…', 'Arrumando o ninho…',
+    'Espantando os caçadores…', 'Trocando a palha do ninho…', 'Treinando o rugido…', 'Acendendo as tochas do covil…'];
+  for (var j = frases.length - 1; j > 1; j--) { var r = 1 + Math.floor(Math.random() * j); var x = frases[j]; frases[j] = frases[r]; frases[r] = x; } // shuffle, keep the first
+  var k = 0, tipTimer = setInterval(function () {
+    msg.classList.add('out');
+    setTimeout(function () { k = (k + 1) % frases.length; msg.textContent = frases[k]; msg.classList.remove('out'); }, 250);
+  }, 1800);
+  function show() { fill.style.width = p + '%'; pct.textContent = Math.floor(p) + '%'; if (p >= 100) { clearInterval(tipTimer); msg.classList.remove('out'); msg.textContent = 'O covil está pronto!'; } }
   var tick = setInterval(function () { if (!done) { p += (92 - p) * 0.03; show(); } }, 120);
   window.__loadDone = function () {
     if (done) return; done = true; clearInterval(tick);
