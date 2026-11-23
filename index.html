@@ -281,6 +281,63 @@ body.editing .play-only, body.editing .plaque, body.editing .chip, body.editing 
 @media (max-width: 560px) { .banners { display: grid; grid-template-columns: repeat(2, 124px); } }
 
 
+/* ---------- Main screen (lobby): portrait phone layout, centered column on wide screens ---------- */
+.screen.lobby { padding: 0; justify-content: flex-start; align-items: stretch; overflow: hidden; }
+:where(.lobby button) { background: none; border: 0; padding: 0; color: inherit; }
+.lb { flex: 1; min-height: 0; width: min(100%, 460px); margin: 0 auto; display: flex; flex-direction: column;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) max(10px, env(safe-area-inset-right, 0px)) 0 max(10px, env(safe-area-inset-left, 0px)); }
+.lobby .ic { display: inline-grid; place-items: center; line-height: 1; }
+.lb-top { display: flex; align-items: center; gap: 6px; }
+.lb-ava { width: 50px; height: 50px; flex: none; position: relative; border-radius: 12px; background: #4a2c18; border: 2px solid #b8893c; }
+.lb-ava-img { position: absolute; inset: 3px 3px 8px; border-radius: 8px; background: #f3e2bd var(--dragon-img) center / 150%; }
+.lb-niv { position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%); white-space: nowrap; font: 800 11px var(--font-body); padding: 1px 6px; border-radius: 8px; background: #b8893c; color: #2a170b; }
+.lb-res { flex: 1; min-width: 0; height: 28px; display: flex; align-items: center; gap: 3px; padding: 0 5px 0 4px; border-radius: 14px;
+  background: rgba(58, 36, 20, .9); color: #f6e3bb !important; border: 1px solid #b8893c !important; font: 800 13px var(--font-body); }
+.lb-res .ic { font-size: 16px; width: 20px; }
+.lb-res .pl { margin-left: auto; width: 17px; height: 17px; display: grid; place-items: center; border-radius: 5px; background: #5d9a3c; color: #fff; font-size: 13px; }
+.lb-gear { font-size: 22px; flex: none; }
+.lb-season { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 7px 12px !important; border-radius: 12px; text-align: left;
+  background: linear-gradient(#5a3418, #3c2210) !important; color: #f6e3bb !important; border: 2px solid #b8893c !important; }
+.lb-season .ic { font-size: 24px; }
+.lb-season-t { flex: 1; min-width: 0; }
+.lb-season b { display: block; font: 700 13px var(--font-display); }
+.lb-bar { display: block; height: 8px; margin-top: 4px; border-radius: 5px; background: #1e120a; overflow: hidden; }
+.lb-bar i { display: block; height: 100%; width: 2%; background: #e6b54a; }
+.lb-season-n { font: 800 12px var(--font-body); }
+.lb-mid { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; align-items: center; }
+.lb-side { position: absolute; top: 10px; display: flex; flex-direction: column; gap: 10px; z-index: 2; }
+.lb-side.l { left: 0; } .lb-side.r { right: 0; }
+.lb-b { width: 56px; display: flex; flex-direction: column; align-items: center; gap: 2px; font: 800 10px var(--font-body); color: #3a2414 !important; line-height: 1.1; }
+.lb-b .q { width: 46px; height: 46px; display: grid; place-items: center; font-size: 24px; line-height: 1; border-radius: 12px;
+  background: rgba(243, 226, 189, .85); border: 2px solid #8a5f2c; box-shadow: 0 2px 0 #6b4520; }
+.lb-b:active .q { transform: translateY(2px); box-shadow: none; }
+.lb-cap { margin-top: 18px; text-align: center; z-index: 1; }
+.lb-cap small { font: 700 13px var(--font-display); letter-spacing: .2em; text-transform: uppercase; color: #7a4f25; }
+.lb-cap h1 { font: 700 30px/1.05 var(--font-display) !important; margin: 0 !important; color: #3a2414; }
+.lb-cap p { font: 700 13px var(--font-body); color: #7a4f25; margin: 3px 0 0; min-height: 1em; }
+.lb-hero { flex: 1; min-height: 80px; width: min(260px, 70%); margin: 4px 0; background: var(--dragon-img) center / contain no-repeat; mix-blend-mode: multiply; }
+.lb-short { display: flex; gap: 14px; padding-bottom: 6px; }
+.lb-short .lb-b { width: 74px; }
+.lb-short .q { width: 52px; height: 52px; }
+.lb-play { display: flex; align-items: center; gap: 10px; padding: 6px 0 10px; }
+.lb-play .lb-b .q { width: 52px; height: 52px; }
+.lb-go { flex: 1; height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 16px;
+  background: linear-gradient(#5a3418, #33190a) !important; border: 3px solid #d4a24a !important; color: #f6e3bb !important; box-shadow: 0 5px 0 #1e0f05, 0 8px 16px rgba(60, 30, 10, .35); }
+.lb-go:active { transform: translateY(3px); box-shadow: 0 2px 0 #1e0f05; }
+.lb-go b { font: 700 28px/1 var(--font-display); letter-spacing: .08em; text-transform: uppercase; }
+.lb-go span { margin-top: 5px; padding: 1px 14px; border-radius: 9px; background: #1e0f05; color: #ffd257; font: 800 14px var(--font-body); }
+.lb-tabs { flex: none; display: flex; align-items: flex-end; justify-content: center; height: calc(84px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: linear-gradient(#5a3418, #2e1709); border-top: 3px solid #b8893c; position: relative; z-index: 1; }
+.lb-tabs button { flex: 1; max-width: 92px; height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font: 800 10px var(--font-body); color: #f6e3bb !important; border-right: 1px solid rgba(0, 0, 0, .25) !important; }
+.lb-tabs .ic { font-size: 26px; width: 34px; height: 34px; }
+.lb-tabs .on { flex: 1.35; max-width: 124px; height: 84px; font-size: 13px; border-radius: 14px 14px 0 0; background: linear-gradient(#8a5a26, #4a2a12) !important; border: 3px solid #d4a24a !important; border-bottom: 0 !important; }
+.lb-tabs .on .ic { font-size: 34px; width: 44px; height: 44px; }
+.lb-toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 260px); transform: translate(-50%, 10px); z-index: 3; opacity: 0; pointer-events: none;
+  background: #3a2414; color: #f6e3bb; font: 700 13px var(--font-body); padding: 8px 16px; border-radius: 20px; border: 1px solid #b8893c; transition: opacity .2s, transform .2s; white-space: nowrap; }
+.lb-toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (max-height: 640px) { .lb-hero { min-height: 40px; } .lb-cap { margin-top: 6px; } .lb-cap h1 { font-size: 24px !important; } .lb-side { gap: 6px; } .lb-b .q { width: 40px; height: 40px; font-size: 20px; } }
+
 /* ---------- Medium widths: hide tool labels ---------- */
 @media (max-width: 1180px) and (min-aspect-ratio: 9/10) {
   .hud-tools .lbl { display: none; }
@@ -511,18 +568,49 @@ body.fan-open .fan-scrim { display: block; }
   <section class="card wave-card" id="wave-card"></section>
 </aside>
 
-<section class="screen" id="scr-menu" hidden>
-  <h1>O Covil dos Dragões TD</h1>
-  <div class="rule"></div>
-  <div class="art" role="img" aria-label="Dragão protegendo o covil"></div>
-  <p class="tagline">Os caçadores querem o tesouro do covil. Plante escamas, trace o labirinto e desperte os dragões.</p>
-  <div class="menu-btns">
-    <button class="pbtn dark" id="m-play">Jogar</button>
-    <button class="pbtn line" id="m-ranking">Ranking</button>
-    <button class="pbtn line" id="m-book">Livro dos Dragões</button>
-    <button class="pbtn line wide" id="m-mazes">Labirintos</button>
+<section class="screen lobby" id="scr-menu" hidden>
+  <div class="lb">
+    <div class="lb-top">
+      <button class="lb-ava" data-soon="Perfil do jogador"><span class="lb-ava-img"></span><span class="lb-niv">Nv 1</span></button>
+      <button class="lb-res" data-soon="Energia"><span class="ic">⚡</span>30/30<span class="pl">+</span></button>
+      <button class="lb-res" data-soon="Gemas"><span class="ic">💎</span>0<span class="pl">+</span></button>
+      <button class="lb-res" data-soon="Moedas"><span class="ic">🪙</span>0<span class="pl">+</span></button>
+      <button class="lb-gear" data-soon="Ajustes" aria-label="Ajustes">⚙️</button>
+    </div>
+    <button class="lb-season" data-soon="Temporada"><span class="ic">📜</span><span class="lb-season-t"><b>Temporada 1 · Despertar</b><span class="lb-bar"><i></i></span></span><span class="lb-season-n">0/20</span></button>
+    <div class="lb-mid">
+      <div class="lb-side l">
+        <button class="lb-b" data-soon="Ofertas"><span class="q">🎁</span>Ofertas</button>
+        <button class="lb-b" data-soon="Missões"><span class="q">📋</span>Missões</button>
+        <button class="lb-b" data-soon="Eventos"><span class="q">🔥</span>Evento</button>
+      </div>
+      <div class="lb-side r">
+        <button class="lb-b" data-soon="Correio"><span class="q">✉️</span>Correio</button>
+        <button class="lb-b" id="m-ranking"><span class="q">🏆</span>Ranking</button>
+        <button class="lb-b" data-soon="Prêmio diário"><span class="q">📅</span>Diário</button>
+      </div>
+      <div class="lb-cap"><small>Capítulo 1</small><h1>O Covil</h1><p id="m-record"></p></div>
+      <div class="lb-hero" role="img" aria-label="Dragão protegendo o covil"></div>
+      <div class="lb-short">
+        <button class="lb-b" data-soon="Baú da fase"><span class="q">🧰</span>Baú da fase</button>
+        <button class="lb-b" data-soon="Desafio de 3 estrelas"><span class="q">⭐</span>3 estrelas</button>
+        <button class="lb-b" id="m-mazes"><span class="q">🌀</span>Labirintos</button>
+      </div>
+    </div>
+    <div class="lb-play">
+      <button class="lb-b" data-soon="Clã"><span class="q">🛡️</span>Clã</button>
+      <button class="lb-go" id="m-play"><b>Jogar</b><span>⚡ 5</span></button>
+      <button class="lb-b" data-soon="Arena"><span class="q">⚔️</span>Arena</button>
+    </div>
   </div>
-  <div class="record" id="m-record"></div>
+  <nav class="lb-tabs">
+    <button data-soon="Loja"><span class="ic">🏪</span>Loja</button>
+    <button data-soon="Dragões"><span class="ic">🐉</span>Dragões</button>
+    <button class="on" aria-current="page"><span class="ic">🏰</span>Aventura</button>
+    <button id="m-book"><span class="ic">📖</span>Livro</button>
+    <button data-soon="Ovos"><span class="ic">🥚</span>Ovos</button>
+  </nav>
+  <div class="lb-toast" id="lb-toast" role="status" aria-live="polite"></div>
 </section>
 <section class="screen" id="scr-levels" hidden>
   <div class="kick">Escolha o nível</div>

@@ -19,6 +19,17 @@ export function initMenu(callbacks) {
   $('m-book').onclick = () => cb.onBook?.();
   $('m-mazes').onclick = () => cb.onMazes?.();
   $('lv-back').onclick = showMenu;
+  // Reserved spots (coins, shop, missions, eggs...) only say "coming soon" for now.
+  document.querySelectorAll('#scr-menu [data-soon]').forEach((b) => { b.onclick = () => soon(b.dataset.soon); });
+}
+
+let toastTimer;
+function soon(what) {
+  const t = $('lb-toast');
+  t.textContent = `${what}: em breve`;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
 }
 
 export function screensOpen() { return !$('scr-menu').hidden || !$('scr-levels').hidden; }
@@ -32,7 +43,7 @@ export function hideScreens() { $('scr-menu').hidden = true; $('scr-levels').hid
 
 export function showMenu() {
   const best = bestOverall(store());
-  $('m-record').textContent = best ? `Recorde: fase ${best.phase} · ${DIFFICULTIES[best.diffKey]?.name ?? ''}` : '';
+  $('m-record').textContent = best ? `Recorde: fase ${best.phase} · ${DIFFICULTIES[best.diffKey]?.name ?? ''}` : 'Proteja o tesouro do covil';
   $('scr-levels').hidden = true;
   $('scr-menu').hidden = false;
   setMatchInert(true);
